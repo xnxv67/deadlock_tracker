@@ -1,3 +1,4 @@
+import '../entities/hero.dart';
 import '../entities/hero_ability_path.dart';
 import '../entities/hero_build.dart';
 import '../entities/hero_counter.dart';
@@ -9,6 +10,11 @@ import '../entities/hero_trend.dart';
 import '../entities/popular_item.dart';
 
 abstract class HeroRepository {
+  /// Поиск героев по имени или роли (регистронезависимый).
+  ///
+  /// Пустой запрос возвращает пустой список без сетевого вызова.
+  Future<List<Hero>> searchHeroes(String query);
+
   /// Все играбельные герои с винрейтом и пикрейтом.
   Future<List<HeroMeta>> getMeta();
 

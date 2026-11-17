@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'app.dart';
 import 'core/cache/api_cache.dart';
 import 'core/constants/api_constants.dart';
+import 'data/api/api_client.dart';
 import 'data/datasources/deadlock_api.dart';
 import 'data/repositories/asset_catalog.dart';
 import 'data/repositories/hero_repository_impl.dart';
@@ -27,10 +28,15 @@ void main() {
 
   final api = DeadlockApi(dio, cache);
   final catalog = AssetCatalog(api);
+  final apiClient = ApiClient(dio: dio);
 
   runApp(
     DeadlockApp(
-      heroRepository: HeroRepositoryImpl(api, catalog),
+      heroRepository: HeroRepositoryImpl(
+        api,
+        catalog,
+        apiClient: apiClient,
+      ),
       playerRepository: PlayerRepositoryImpl(api, catalog),
       itemsRepository: ItemsRepositoryImpl(api, catalog),
       leaderboardRepository: LeaderboardRepositoryImpl(api, catalog),

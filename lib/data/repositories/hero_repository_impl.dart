@@ -14,9 +14,11 @@ import '../../domain/entities/hero_trend.dart';
 import '../../domain/entities/popular_item.dart';
 import '../../domain/entities/item.dart';
 import '../../domain/repositories/hero_repository.dart';
+import '../api/api_client.dart';
 import '../datasources/deadlock_api.dart';
 import '../dto/hero_build_stats_dto.dart';
 import '../dto/hero_counter_dto.dart';
+import '../dto/hero_dto.dart';
 import '../dto/hero_stats_dto.dart';
 import '../dto/ability_asset_dto.dart';
 import '../dto/hero_synergy_dto.dart';
@@ -24,7 +26,11 @@ import '../dto/item_asset_dto.dart';
 import '../repositories/asset_catalog.dart';
 
 class HeroRepositoryImpl implements HeroRepository {
-  HeroRepositoryImpl(this._api, this._catalog);
+  HeroRepositoryImpl(
+    this._api,
+    this._catalog, {
+    ApiClient? apiClient,
+  }) : _apiClient = apiClient ?? ApiClient();
 
   static const List<_DurationBucket> _durationBuckets = [
     _DurationBucket('до 20 мин', 0, 1200),
@@ -37,6 +43,7 @@ class HeroRepositoryImpl implements HeroRepository {
 
   final DeadlockApi _api;
   final AssetCatalog _catalog;
+  final ApiClient _apiClient;
 
   List<HeroStatsDto>? _statsCache;
   List<HeroCounterDto>? _countersCache;
@@ -49,6 +56,39 @@ class HeroRepositoryImpl implements HeroRepository {
   final Map<int, HeroTrend?> _trendCache = {};
   Map<int, AbilityAssetDto>? _abilityMap;
   Map<int, double>? _itemBuyTimes;
+
+  @override
+  Future<List<Hero>> searchHeroes(String query) {
+    final normalized = query.trim().toLowerCase();
+    if (normalized.isEmpty) {
+      return Future.value(const <Hero>[]);
+    }
+
+    return _guard(() async {
+      final data = await _apiClient.getList('/assets/heroes');
+
+      final result = <Hero>[];
+      for (final item in data) {
+        if (item is! Map) {
+          continue;
+        }
+        final dto = HeroDto.fromJson(Map<String, dynamic>.from(item));
+        if (dto.id <= 0 || !dto.playerSelectable || dto.disabled) {
+          continue;
+        }
+        final haystack = '${dto.name} ${dto.role}'.toLowerCase();
+        if (!haystack.contains(normalized)) {
+          continue;
+        }
+        result.add(dto.toEntity());
+      }
+
+      result.sort(
+        (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+      );
+      return result;
+    });
+  }
 
   @override
   Future<List<HeroMeta>> getMeta() {
