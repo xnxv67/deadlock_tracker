@@ -1,0 +1,12 @@
+{
+  "@@locale": "ru",
+  "appTitle": "Deadlock Tracker",
+  "heroesTab": "Герои",
+  "favoritesTab": "Избранное",
+  "addedToFavorites": "Добавлено в избранное",
+  "removedFromFavorites": "Удалено из избранного",
+  "heroDetails": "Детали героя",
+  "noFavorites": "Пока нет избранных героев",
+  "heroDescription": "Описание",
+  "retry": "Повторить"
+}

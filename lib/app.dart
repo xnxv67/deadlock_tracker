@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'core/theme/app_theme.dart';
 import 'data/datasources/deadlock_api.dart';
@@ -7,6 +8,8 @@ import 'domain/repositories/hero_repository.dart';
 import 'domain/repositories/items_repository.dart';
 import 'domain/repositories/leaderboard_repository.dart';
 import 'domain/repositories/player_repository.dart';
+import 'features/heroes/screens/main_screen.dart';
+import 'l10n/app_localizations.dart';
 import 'presentation/screens/main_shell.dart';
 
 class DeadlockApp extends StatelessWidget {
@@ -41,7 +44,17 @@ class DeadlockApp extends StatelessWidget {
         title: 'Deadlock Tracker',
         debugShowCheckedModeBanner: false,
         theme: buildAppTheme(),
-        home: const MainShell(),
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: const MainScreen(),
+        routes: {
+          '/tracker': (_) => const MainShell(),
+        },
       ),
     );
   }

@@ -1,0 +1,21 @@
+{
+  "@@locale": "en",
+  "appTitle": "Deadlock Tracker",
+  "@appTitle": { "description": "App title" },
+  "heroesTab": "Heroes",
+  "@heroesTab": { "description": "Heroes tab label" },
+  "favoritesTab": "Favorites",
+  "@favoritesTab": { "description": "Favorites tab label" },
+  "addedToFavorites": "Added to favorites",
+  "@addedToFavorites": { "description": "Snackbar when hero liked" },
+  "removedFromFavorites": "Removed from favorites",
+  "@removedFromFavorites": { "description": "Snackbar when hero unliked" },
+  "heroDetails": "Hero details",
+  "@heroDetails": { "description": "Detail screen title" },
+  "noFavorites": "No favorites yet",
+  "@noFavorites": { "description": "Empty favorites message" },
+  "heroDescription": "Description",
+  "@heroDescription": { "description": "Description label" },
+  "retry": "Retry",
+  "@retry": { "description": "Retry button" }
+}
