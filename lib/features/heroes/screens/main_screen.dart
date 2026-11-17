@@ -12,6 +12,17 @@ import '../../search/bloc/hero_search_event.dart';
 import '../../search/bloc/hero_search_state.dart';
 import '../widgets/hero_card.dart';
 
+/// Варианты сортировки списка героев.
+enum HeroSort {
+  name('По имени'),
+  winRate('По винрейту'),
+  pickRate('По пикрейту');
+
+  const HeroSort(this.label);
+
+  final String label;
+}
+
 /// Главный экран с навигацией: Герои / Избранное и поиском.
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -27,8 +38,26 @@ class _MainScreenState extends State<MainScreen> {
   int _tab = 0;
 
   /// Все герои меты (для вкладки «Избранное» и стартового списка).
-  List<Hero> _allHeroes = const [];
+  List<HeroMeta> _allMeta = const [];
+  HeroSort _sort = HeroSort.name;
   bool _loadingAll = true;
+
+  /// Текущий отсортированный список героев.
+  List<Hero> get _allHeroes {
+    final sorted = [..._allMeta]..sort((a, b) {
+      switch (_sort) {
+        case HeroSort.name:
+          return a.hero.name.toLowerCase().compareTo(
+            b.hero.name.toLowerCase(),
+          );
+        case HeroSort.winRate:
+          return b.winRate.compareTo(a.winRate);
+        case HeroSort.pickRate:
+          return b.pickRate.compareTo(a.pickRate);
+      }
+    });
+    return sorted.map((m) => m.hero).toList();
+  }
 
   @override
   void initState() {
@@ -48,7 +77,7 @@ class _MainScreenState extends State<MainScreen> {
       final meta = await context.read<HeroRepository>().getMeta();
       if (!mounted) return;
       setState(() {
-        _allHeroes = meta.map((HeroMeta m) => m.hero).toList();
+        _allMeta = meta;
         _loadingAll = false;
       });
     } catch (_) {
@@ -96,7 +125,51 @@ class _MainScreenState extends State<MainScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(_tab == 0 ? l10n.heroesTab : l10n.favoritesTab),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(l10n.appTitle),
+            Text(
+              _tab == 0 ? l10n.heroesTab : l10n.favoritesTab,
+              style: const TextStyle(
+                fontSize: 11,
+                color: AppColors.muted,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          if (_tab == 0)
+            PopupMenuButton<HeroSort>(
+              tooltip: 'Сортировка',
+              icon: const Icon(Icons.sort_rounded),
+              initialValue: _sort,
+              onSelected: (sort) => setState(() => _sort = sort),
+              itemBuilder: (context) => [
+                for (final sort in HeroSort.values)
+                  PopupMenuItem<HeroSort>(
+                    value: sort,
+                    child: Row(
+                      children: [
+                        Icon(
+                          sort == _sort
+                              ? Icons.radio_button_checked
+                              : Icons.radio_button_unchecked,
+                          size: 18,
+                          color: sort == _sort
+                              ? AppColors.gold
+                              : AppColors.muted,
+                        ),
+                        const SizedBox(width: 10),
+                        Text(sort.label),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+        ],
       ),
       body: Column(
         children: [
