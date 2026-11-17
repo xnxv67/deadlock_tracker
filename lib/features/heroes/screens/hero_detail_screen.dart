@@ -1,13 +1,13 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Hero;
 
 import '../../../core/theme/app_theme.dart';
-import '../mock_hero.dart';
+import '../../../data/models/hero.dart';
 
 /// Детальный экран героя: изображение, имя, роль и описание.
 class HeroDetailScreen extends StatelessWidget {
   const HeroDetailScreen({super.key, required this.hero});
 
-  final MockHero hero;
+  final Hero hero;
 
   @override
   Widget build(BuildContext context) {
@@ -22,17 +22,27 @@ class HeroDetailScreen extends StatelessWidget {
               aspectRatio: 16 / 9,
               child: Container(
                 color: AppColors.surfaceLight,
-                child: Image.network(
-                  hero.imageUrl,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => const Center(
-                    child: Icon(
-                      Icons.sports_esports_rounded,
-                      size: 64,
-                      color: AppColors.muted,
-                    ),
-                  ),
-                ),
+                child: (hero.cardUrl.isNotEmpty ? hero.cardUrl : hero.imageUrl)
+                        .isNotEmpty
+                    ? Image.network(
+                        hero.cardUrl.isNotEmpty ? hero.cardUrl : hero.imageUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) =>
+                            const Center(
+                          child: Icon(
+                            Icons.sports_esports_rounded,
+                            size: 64,
+                            color: AppColors.muted,
+                          ),
+                        ),
+                      )
+                    : const Center(
+                        child: Icon(
+                          Icons.sports_esports_rounded,
+                          size: 64,
+                          color: AppColors.muted,
+                        ),
+                      ),
               ),
             ),
           ),
@@ -45,16 +55,18 @@ class HeroDetailScreen extends StatelessWidget {
               letterSpacing: 0.6,
             ),
           ),
-          const SizedBox(height: 4),
-          Text(
-            hero.role,
-            style: const TextStyle(
-              color: AppColors.copper,
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 1,
+          if (hero.role.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(
+              hero.role,
+              style: const TextStyle(
+                color: AppColors.copper,
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 1,
+              ),
             ),
-          ),
+          ],
           const SizedBox(height: 18),
           Container(
             padding: const EdgeInsets.all(16),
@@ -64,7 +76,8 @@ class HeroDetailScreen extends StatelessWidget {
               border: Border.all(color: AppColors.border),
             ),
             child: Text(
-              MockHero.descriptionFor(hero),
+              '${hero.name} — ${hero.role.isEmpty ? 'герой Deadlock' : hero.role}. '
+              'Подробная информация о герое, его роли и способностях.',
               style: const TextStyle(
                 color: AppColors.text,
                 fontSize: 13.5,

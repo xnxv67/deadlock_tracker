@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Hero;
 
 import '../../../core/theme/app_theme.dart';
-import '../mock_hero.dart';
+import '../../../data/models/hero.dart';
 import '../screens/hero_detail_screen.dart';
 
 /// Карточка героя: изображение, имя, роль, кнопка лайка.
@@ -14,7 +14,7 @@ class HeroCard extends StatelessWidget {
     this.onTap,
   });
 
-  final MockHero hero;
+  final Hero hero;
   final bool isFavorite;
   final Future<void> Function() onToggleFavorite;
   final VoidCallback? onTap;

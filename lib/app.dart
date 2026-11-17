@@ -9,6 +9,7 @@ import 'domain/repositories/items_repository.dart';
 import 'domain/repositories/leaderboard_repository.dart';
 import 'domain/repositories/player_repository.dart';
 import 'features/heroes/screens/main_screen.dart';
+import 'features/search/bloc/hero_search_bloc.dart';
 import 'l10n/app_localizations.dart';
 import 'presentation/screens/main_shell.dart';
 
@@ -40,7 +41,14 @@ class DeadlockApp extends StatelessWidget {
         ),
         RepositoryProvider<DeadlockApi>.value(value: api),
       ],
-      child: MaterialApp(
+      child: MultiBlocProvider(
+        providers: [
+          BlocProvider<HeroSearchBloc>(
+            create: (context) =>
+                HeroSearchBloc(context.read<HeroRepository>()),
+          ),
+        ],
+        child: MaterialApp(
         title: 'Deadlock Tracker',
         debugShowCheckedModeBanner: false,
         theme: buildAppTheme(),
@@ -53,8 +61,9 @@ class DeadlockApp extends StatelessWidget {
         supportedLocales: AppLocalizations.supportedLocales,
         home: const MainScreen(),
         routes: {
-          '/tracker': (_) => const MainShell(),
-        },
+            '/tracker': (_) => const MainShell(),
+          },
+        ),
       ),
     );
   }

@@ -1,13 +1,18 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Hero;
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../../data/models/hero.dart';
+import '../../../domain/entities/hero_meta.dart';
+import '../../../domain/repositories/hero_repository.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../favorites/favorites_service.dart';
-import '../mock_hero.dart';
+import '../../search/bloc/hero_search_bloc.dart';
+import '../../search/bloc/hero_search_event.dart';
+import '../../search/bloc/hero_search_state.dart';
 import '../widgets/hero_card.dart';
-import '../screens/hero_detail_screen.dart';
 
-/// Главный экран с навигацией: Герои / Избранное.
+/// Главный экран с навигацией: Герои / Избранное и поиском.
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
 
@@ -17,13 +22,39 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   final FavoritesService _favoritesService = FavoritesService();
+  final TextEditingController _searchController = TextEditingController();
   final Set<int> _favorites = {};
   int _tab = 0;
+
+  /// Все герои меты (для вкладки «Избранное» и стартового списка).
+  List<Hero> _allHeroes = const [];
+  bool _loadingAll = true;
 
   @override
   void initState() {
     super.initState();
     _loadFavorites();
+    _loadAllHeroes();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadAllHeroes() async {
+    try {
+      final meta = await context.read<HeroRepository>().getMeta();
+      if (!mounted) return;
+      setState(() {
+        _allHeroes = meta.map((HeroMeta m) => m.hero).toList();
+        _loadingAll = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _loadingAll = false);
+    }
   }
 
   Future<void> _loadFavorites() async {
@@ -36,7 +67,7 @@ class _MainScreenState extends State<MainScreen> {
     });
   }
 
-  Future<void> _toggleFavorite(MockHero hero) async {
+  Future<void> _toggleFavorite(Hero hero) async {
     final liked = await _favoritesService.toggle(hero.id);
     if (!mounted) return;
     setState(() {
@@ -62,28 +93,17 @@ class _MainScreenState extends State<MainScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final favoriteHeroes = MockHero.samples
-        .where((hero) => _favorites.contains(hero.id))
-        .toList();
-
-    final body = _tab == 0
-        ? _HeroGrid(
-            heroes: MockHero.samples,
-            favorites: _favorites,
-            onToggle: _toggleFavorite,
-          )
-        : _HeroGrid(
-            heroes: favoriteHeroes,
-            favorites: _favorites,
-            onToggle: _toggleFavorite,
-            emptyText: l10n.noFavorites,
-          );
 
     return Scaffold(
       appBar: AppBar(
         title: Text(_tab == 0 ? l10n.heroesTab : l10n.favoritesTab),
       ),
-      body: body,
+      body: Column(
+        children: [
+          if (_tab == 0) _SearchField(controller: _searchController),
+          Expanded(child: _tab == 0 ? _heroesTab(l10n) : _favoritesTab(l10n)),
+        ],
+      ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _tab,
         onTap: (index) => setState(() => _tab = index),
@@ -104,6 +124,84 @@ class _MainScreenState extends State<MainScreen> {
       ),
     );
   }
+
+  Widget _heroesTab(AppLocalizations l10n) {
+    return BlocBuilder<HeroSearchBloc, HeroSearchState>(
+      builder: (context, state) {
+        final hasQuery = state.query.trim().isNotEmpty;
+        if (hasQuery) {
+          if (state.status == HeroSearchStatus.loading) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          return _HeroGrid(
+            heroes: state.heroes,
+            favorites: _favorites,
+            onToggle: _toggleFavorite,
+            emptyText: 'Ничего не найдено',
+          );
+        }
+        if (_loadingAll) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        return _HeroGrid(
+          heroes: _allHeroes,
+          favorites: _favorites,
+          onToggle: _toggleFavorite,
+          emptyText: 'Нет героев',
+        );
+      },
+    );
+  }
+
+  Widget _favoritesTab(AppLocalizations l10n) {
+    final favoriteHeroes =
+        _allHeroes.where((hero) => _favorites.contains(hero.id)).toList();
+    return _HeroGrid(
+      heroes: favoriteHeroes,
+      favorites: _favorites,
+      onToggle: _toggleFavorite,
+      emptyText: l10n.noFavorites,
+    );
+  }
+}
+
+class _SearchField extends StatelessWidget {
+  const _SearchField({required this.controller});
+
+  final TextEditingController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(14, 10, 14, 4),
+      child: TextField(
+        controller: controller,
+        onChanged: (value) => context
+            .read<HeroSearchBloc>()
+            .add(HeroSearchQueryChanged(value)),
+        decoration: InputDecoration(
+          hintText: 'Поиск героя...',
+          isDense: true,
+          prefixIcon: const Icon(
+            Icons.search_rounded,
+            size: 20,
+            color: AppColors.muted,
+          ),
+          suffixIcon: controller.text.isEmpty
+              ? null
+              : IconButton(
+                  icon: const Icon(Icons.clear_rounded, size: 18),
+                  onPressed: () {
+                    controller.clear();
+                    context
+                        .read<HeroSearchBloc>()
+                        .add(const HeroSearchQueryChanged(''));
+                  },
+                ),
+        ),
+      ),
+    );
+  }
 }
 
 class _HeroGrid extends StatelessWidget {
@@ -114,9 +212,9 @@ class _HeroGrid extends StatelessWidget {
     this.emptyText,
   });
 
-  final List<MockHero> heroes;
+  final List<Hero> heroes;
   final Set<int> favorites;
-  final Future<void> Function(MockHero) onToggle;
+  final Future<void> Function(Hero) onToggle;
   final String? emptyText;
 
   @override
@@ -159,11 +257,6 @@ class _HeroGrid extends StatelessWidget {
               hero: hero,
               isFavorite: favorites.contains(hero.id),
               onToggleFavorite: () => onToggle(hero),
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (_) => HeroDetailScreen(hero: hero),
-                ),
-              ),
             );
           },
         );
