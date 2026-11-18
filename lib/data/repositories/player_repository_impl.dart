@@ -83,7 +83,7 @@ class PlayerRepositoryImpl implements PlayerRepository {
     Map<int, HeroDto> heroMap,
   ) {
     final result = <MatchRecord>[];
-    for (final match in source.take(10)) {
+    for (final match in source.take(20)) {
       final heroId = match.heroId;
       if (heroId <= 0) {
         continue;

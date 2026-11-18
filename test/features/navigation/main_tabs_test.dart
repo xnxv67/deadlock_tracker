@@ -61,6 +61,15 @@ void main() {
     expect(find.text('Infernus'), findsOneWidget);
     expect(find.text('Abrams'), findsOneWidget);
 
+    await tester.tap(find.text('Tank').first);
+    await tester.pumpAndSettle();
+    expect(find.text('Abrams'), findsOneWidget);
+    expect(find.text('Infernus'), findsNothing);
+
+    await tester.tap(find.text('Все'));
+    await tester.pumpAndSettle();
+    expect(find.text('Infernus'), findsOneWidget);
+
     await tester.enterText(find.byType(TextField).first, 'Infer');
     await tester.pumpAndSettle();
     expect(find.text('Infernus'), findsOneWidget);

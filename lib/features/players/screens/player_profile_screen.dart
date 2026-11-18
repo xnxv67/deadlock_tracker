@@ -5,12 +5,16 @@ import '../../../core/error/app_exception.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/error_messages.dart';
 import '../../../core/utils/formatters.dart';
+import '../../../domain/entities/item_meta.dart';
+import '../../../domain/entities/match_record.dart';
 import '../../../domain/entities/player_badge.dart';
 import '../../../domain/entities/player_hero_stat.dart';
 import '../../../domain/entities/player_profile.dart';
+import '../../../domain/repositories/items_repository.dart';
 import '../../../domain/repositories/player_repository.dart';
 import '../../../presentation/widgets/error_view.dart';
 import '../../../presentation/widgets/hero_avatar.dart';
+import '../../../presentation/widgets/item_icon.dart';
 import '../../../presentation/widgets/rank_badge_chip.dart';
 import '../../../presentation/widgets/remote_image.dart';
 import '../../../presentation/widgets/shimmer_skeleton.dart';
@@ -314,7 +318,466 @@ class _PlayerProfileScreenState extends State<PlayerProfileScreen> {
             style: const TextStyle(color: AppColors.muted, fontSize: 9.5),
           ),
         ],
+        const SizedBox(height: 20),
+        _SectionTitle(
+          title: 'История матчей',
+          subtitle: 'Последние ${profile.matches.length} игр',
+          trailing: Text(
+            '${profile.matches.length}',
+            style: const TextStyle(
+              color: AppColors.muted,
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        if (profile.matches.isEmpty)
+          const SurfaceCard(
+            child: Text(
+              'Нет истории матчей',
+              style: TextStyle(color: AppColors.muted, fontSize: 12),
+            ),
+          )
+        else
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              for (var index = 0; index < profile.matches.length; index++) ...[
+                if (index > 0) const SizedBox(height: 8),
+                _MatchCard(
+                  match: profile.matches[index],
+                  onTap: () => _openMatch(profile.matches[index]),
+                ),
+              ],
+            ],
+          ),
       ],
+    );
+  }
+
+  void _openMatch(MatchRecord match) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _MatchDetailsSheet(match: match),
+    );
+  }
+}
+
+class _MatchCard extends StatelessWidget {
+  const _MatchCard({required this.match, required this.onTap});
+
+  final MatchRecord match;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = match.isWin ? AppColors.win : AppColors.lose;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Ink(
+          padding: const EdgeInsets.fromLTRB(11, 9, 8, 9),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.09),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: color.withValues(alpha: 0.38)),
+          ),
+          child: Row(
+            children: [
+              HeroAvatar(hero: match.hero, size: 40),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            match.hero.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 7,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: color.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(
+                              color: color.withValues(alpha: 0.6),
+                            ),
+                          ),
+                          child: Text(
+                            match.isWin ? 'ПОБЕДА' : 'ПОРАЖЕНИЕ',
+                            style: TextStyle(
+                              color: color,
+                              fontSize: 8.5,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${formatDateFromSeconds(match.startTime)} · '
+                      '${formatDuration(match.durationSeconds)}',
+                      style: const TextStyle(
+                        color: AppColors.muted,
+                        fontSize: 9.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    match.kda.toStringAsFixed(2),
+                    style: const TextStyle(
+                      color: AppColors.gold,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w900,
+                      height: 1.1,
+                    ),
+                  ),
+                  Text(
+                    '${match.kills}/${match.deaths}/${match.assists}',
+                    style: const TextStyle(
+                      color: AppColors.muted,
+                      fontSize: 9,
+                    ),
+                  ),
+                ],
+              ),
+              const Icon(
+                Icons.chevron_right_rounded,
+                size: 18,
+                color: AppColors.muted,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Нижняя панель деталей матча. API матча не отдаёт инвентарь игрока,
+/// поэтому набор предметов собирается из каталога как демонстрация UI.
+class _MatchDetailsSheet extends StatefulWidget {
+  const _MatchDetailsSheet({required this.match});
+
+  final MatchRecord match;
+
+  @override
+  State<_MatchDetailsSheet> createState() => _MatchDetailsSheetState();
+}
+
+class _MatchDetailsSheetState extends State<_MatchDetailsSheet> {
+  List<ItemMeta> _items = const [];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadItems();
+  }
+
+  Future<void> _loadItems() async {
+    ItemsRepository? repository;
+    try {
+      repository = context.read<ItemsRepository>();
+    } catch (_) {
+      repository = null;
+    }
+    if (repository == null) {
+      if (mounted) {
+        setState(() => _loading = false);
+      }
+      return;
+    }
+
+    try {
+      final catalog = [...await repository.getItems()]
+        ..sort((a, b) => a.item.id.compareTo(b.item.id));
+      if (catalog.isEmpty) {
+        if (mounted) {
+          setState(() => _loading = false);
+        }
+        return;
+      }
+
+      // Детерминированный «набор» из каталога: одинаковый для одного матча.
+      final start = widget.match.matchId % catalog.length;
+      final picked = <ItemMeta>[];
+      for (var i = 0; i < 6 && i < catalog.length; i++) {
+        picked.add(catalog[(start + i) % catalog.length]);
+      }
+
+      if (!mounted) return;
+      setState(() {
+        _items = picked;
+        _loading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _loading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final match = widget.match;
+    final color = match.isWin ? AppColors.win : AppColors.lose;
+
+    return SafeArea(
+      top: false,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(16, 10, 16, 18),
+        decoration: const BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+          border: Border(
+            top: BorderSide(color: AppColors.border),
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Center(
+              child: Container(
+                width: 42,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceLight,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                HeroAvatar(hero: match.hero, size: 46),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        match.hero.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        'Матч #${match.matchId} · '
+                        '${formatDateFromSeconds(match.startTime)}',
+                        style: const TextStyle(
+                          color: AppColors.muted,
+                          fontSize: 10,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 9,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.18),
+                    borderRadius: BorderRadius.circular(7),
+                    border: Border.all(color: color.withValues(alpha: 0.6)),
+                  ),
+                  child: Text(
+                    match.isWin ? 'ПОБЕДА' : 'ПОРАЖЕНИЕ',
+                    style: TextStyle(
+                      color: color,
+                      fontSize: 9,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 0.6,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                Expanded(
+                  child: _MatchFact(
+                    label: 'KDA',
+                    value: match.kda.toStringAsFixed(2),
+                    hint:
+                        '${match.kills} / ${match.deaths} / ${match.assists}',
+                    color: AppColors.gold,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _MatchFact(
+                    label: 'Длительность',
+                    value: formatDuration(match.durationSeconds),
+                    hint: 'время матча',
+                    color: AppColors.text,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'ПРЕДМЕТЫ',
+              style: TextStyle(
+                color: AppColors.copper,
+                fontSize: 10,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 1.3,
+              ),
+            ),
+            const SizedBox(height: 8),
+            if (_loading)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 16),
+                child: Center(
+                  child: SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                ),
+              )
+            else if (_items.isEmpty)
+              const Text(
+                'Данные о предметах недоступны',
+                style: TextStyle(color: AppColors.muted, fontSize: 11.5),
+              )
+            else ...[
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final meta in _items)
+                    SizedBox(
+                      width: 62,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          ItemIcon(item: meta.item, size: 36),
+                          const SizedBox(height: 3),
+                          Text(
+                            meta.item.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              color: AppColors.muted,
+                              fontSize: 8,
+                              height: 1.15,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              const Text(
+                'Демонстрационный набор: API не отдаёт инвентарь матча.',
+                style: TextStyle(
+                  color: AppColors.muted,
+                  fontSize: 8.5,
+                  height: 1.3,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _MatchFact extends StatelessWidget {
+  const _MatchFact({
+    required this.label,
+    required this.value,
+    required this.hint,
+    required this.color,
+  });
+
+  final String label;
+  final String value;
+  final String hint;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 9, 12, 10),
+      decoration: BoxDecoration(
+        color: AppColors.background.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label.toUpperCase(),
+            style: const TextStyle(
+              color: AppColors.muted,
+              fontSize: 8,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.8,
+            ),
+          ),
+          const SizedBox(height: 3),
+          Text(
+            value,
+            style: TextStyle(
+              color: color,
+              fontSize: 17,
+              fontWeight: FontWeight.w900,
+              height: 1.05,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            hint,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(color: AppColors.muted, fontSize: 8.5),
+          ),
+        ],
+      ),
     );
   }
 }

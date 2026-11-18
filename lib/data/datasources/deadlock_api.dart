@@ -27,7 +27,7 @@ class DeadlockApi {
   DeadlockApi(this._dio, this._cache);
 
   static const Duration _assetsTtl = Duration(hours: 12);
-  static const String _heroesKey = 'heroes_compact_v1';
+  static const String _heroesKey = 'heroes_compact_v2';
   static const String _itemsKey = 'items_compact_v1';
   static const String _abilitiesKey = 'abilities_compact_v1';
 

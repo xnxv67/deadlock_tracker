@@ -266,7 +266,7 @@ class _RegionBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: const EdgeInsets.fromLTRB(12, 8, 6, 8),
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(14),
@@ -289,62 +289,55 @@ class _RegionBar extends StatelessWidget {
               letterSpacing: 1.2,
             ),
           ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  for (final region in LeaderboardRegion.values) ...[
-                    if (region != LeaderboardRegion.values.first)
-                      const SizedBox(width: 6),
-                    _RegionChip(region: region, selected: region == selected),
-                  ],
-                ],
+          const Spacer(),
+          DropdownButtonHideUnderline(
+            child: DropdownButton<LeaderboardRegion>(
+              value: selected,
+              isDense: true,
+              borderRadius: BorderRadius.circular(12),
+              dropdownColor: AppColors.surfaceAlt,
+              icon: const Icon(
+                Icons.expand_more_rounded,
+                size: 18,
+                color: AppColors.copper,
               ),
+              style: const TextStyle(
+                color: AppColors.gold,
+                fontSize: 11,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 0.8,
+              ),
+              items: [
+                for (final region in LeaderboardRegion.values)
+                  DropdownMenuItem<LeaderboardRegion>(
+                    value: region,
+                    child: Text(region.label),
+                  ),
+              ],
+              onChanged: (region) {
+                if (region == null || region == selected) {
+                  return;
+                }
+                context.read<LeaderboardBloc>().add(
+                  LeaderboardRegionChanged(region),
+                );
+              },
+            ),
+          ),
+          const SizedBox(width: 2),
+          IconButton(
+            tooltip: 'Обновить',
+            visualDensity: VisualDensity.compact,
+            icon: const Icon(
+              Icons.refresh_rounded,
+              size: 18,
+              color: AppColors.muted,
+            ),
+            onPressed: () => context.read<LeaderboardBloc>().add(
+              const LeaderboardRefreshRequested(),
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _RegionChip extends StatelessWidget {
-  const _RegionChip({required this.region, required this.selected});
-
-  final LeaderboardRegion region;
-  final bool selected;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => context
-          .read<LeaderboardBloc>()
-          .add(LeaderboardRegionChanged(region)),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          color: selected
-              ? AppColors.copper.withValues(alpha: 0.18)
-              : Colors.transparent,
-          border: Border.all(
-            color: selected
-                ? AppColors.copper
-                : AppColors.copper.withValues(alpha: 0.3),
-          ),
-        ),
-        child: Text(
-          region.label,
-          style: TextStyle(
-            color: selected ? AppColors.gold : AppColors.muted,
-            fontSize: 9.5,
-            fontWeight: FontWeight.w800,
-            letterSpacing: 0.8,
-          ),
-        ),
       ),
     );
   }

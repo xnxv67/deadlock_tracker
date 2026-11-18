@@ -21,6 +21,46 @@ enum HeroSort {
   final String label;
 }
 
+/// Фильтр по роли героя для главной сетки.
+enum HeroRoleFilter {
+  all('Все'),
+  carry('Carry'),
+  support('Support'),
+  tank('Tank'),
+  initiator('Initiator');
+
+  const HeroRoleFilter(this.label);
+
+  final String label;
+
+  /// Deadlock API отдаёт разные формулировки ролей, поэтому
+  /// сопоставляем по ключевым словам и синонимам.
+  bool matches(String role) {
+    final value = role.toLowerCase();
+    switch (this) {
+      case HeroRoleFilter.all:
+        return true;
+      case HeroRoleFilter.carry:
+        return value.contains('carry') ||
+            value.contains('marksman') ||
+            value.contains('damage');
+      case HeroRoleFilter.support:
+        return value.contains('support') ||
+            value.contains('healer') ||
+            value.contains('utility');
+      case HeroRoleFilter.tank:
+        return value.contains('tank') ||
+            value.contains('brawler') ||
+            value.contains('durable');
+      case HeroRoleFilter.initiator:
+        return value.contains('initiator') ||
+            value.contains('initiate') ||
+            value.contains('brawler') ||
+            value.contains('frontline');
+    }
+  }
+}
+
 /// Главный экран с навигацией: Герои / Избранное, поиском и сортировкой.
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -37,6 +77,7 @@ class _MainScreenState extends State<MainScreen> {
 
   List<HeroMeta> _allMeta = const [];
   HeroSort _sort = HeroSort.name;
+  HeroRoleFilter _roleFilter = HeroRoleFilter.all;
   String _query = '';
   bool _loading = true;
   String? _error;
@@ -125,13 +166,18 @@ class _MainScreenState extends State<MainScreen> {
     return sorted;
   }
 
-  /// Герои для вкладки «Герои» с учётом строки поиска.
+  /// Герои для вкладки «Герои» с учётом роли и строки поиска.
   List<HeroMeta> get _searchedMeta {
+    final byRole = _roleFilter == HeroRoleFilter.all
+        ? _sortedMeta
+        : _sortedMeta
+              .where((meta) => _roleFilter.matches(meta.hero.role))
+              .toList();
     final query = _query.trim().toLowerCase();
     if (query.isEmpty) {
-      return _sortedMeta;
+      return byRole;
     }
-    return _sortedMeta
+    return byRole
         .where(
           (meta) =>
               meta.hero.name.toLowerCase().contains(query) ||
@@ -184,11 +230,16 @@ class _MainScreenState extends State<MainScreen> {
       ),
       body: Column(
         children: [
-          if (_tab == 0)
+          if (_tab == 0) ...[
             _SearchField(
               controller: _searchController,
               onChanged: _onSearchChanged,
             ),
+            _RoleFilterBar(
+              selected: _roleFilter,
+              onSelected: (role) => setState(() => _roleFilter = role),
+            ),
+          ],
           Expanded(
             child: switch (_tab) {
               0 => _heroesTab(l10n),
@@ -254,7 +305,11 @@ class _MainScreenState extends State<MainScreen> {
       heroes: _searchedMeta,
       favorites: _favorites,
       onToggle: _toggleFavorite,
-      emptyText: _query.trim().isEmpty ? 'Нет героев' : 'Ничего не найдено',
+      emptyText: switch ((_query.trim().isEmpty, _roleFilter)) {
+        (true, HeroRoleFilter.all) => 'Нет героев',
+        (false, _) => 'Ничего не найдено',
+        (_, final role) => 'Нет героев с ролью ${role.label}',
+      },
     );
   }
 
@@ -309,6 +364,100 @@ class _SearchField extends StatelessWidget {
                 },
               );
             },
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _RoleFilterBar extends StatelessWidget {
+  const _RoleFilterBar({required this.selected, required this.onSelected});
+
+  final HeroRoleFilter selected;
+  final ValueChanged<HeroRoleFilter> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 42,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.fromLTRB(14, 2, 14, 6),
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(right: 8, top: 5),
+            child: Row(
+              children: const [
+                Icon(
+                  Icons.tune_rounded,
+                  size: 15,
+                  color: AppColors.copper,
+                ),
+                SizedBox(width: 5),
+                Text(
+                  'РОЛИ',
+                  style: TextStyle(
+                    color: AppColors.muted,
+                    fontSize: 8.5,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          for (final role in HeroRoleFilter.values)
+            Padding(
+              padding: const EdgeInsets.only(right: 6),
+              child: _RoleChip(
+                role: role,
+                selected: role == selected,
+                onTap: () => onSelected(role),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RoleChip extends StatelessWidget {
+  const _RoleChip({
+    required this.role,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final HeroRoleFilter role;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 160),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          color: selected
+              ? AppColors.copper.withValues(alpha: 0.2)
+              : AppColors.surface,
+          border: Border.all(
+            color: selected
+                ? AppColors.copper
+                : AppColors.copper.withValues(alpha: 0.28),
+          ),
+        ),
+        child: Text(
+          role.label,
+          style: TextStyle(
+            color: selected ? AppColors.gold : AppColors.muted,
+            fontSize: 10.5,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 0.5,
           ),
         ),
       ),

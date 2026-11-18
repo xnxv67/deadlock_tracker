@@ -114,21 +114,22 @@ class HeroCard extends StatelessWidget {
                       Row(
                         children: [
                           Expanded(
-                            child: _RatePair(
+                            child: _RateMeter(
                               value: meta.winRate,
                               color: AppColors.winRateColor(meta.winRate),
                               label: 'WR',
                               tooltip: 'Winrate',
                             ),
                           ),
-                          const SizedBox(width: 6),
+                          const SizedBox(width: 10),
                           Expanded(
-                            child: _RatePair(
-                              value: meta.pickRate,
+                            child: _RateMeter(
+                              // Пикрейт редко превышает 20%, растягиваем шкалу.
+                              value: (meta.pickRate / 0.2).clamp(0.0, 1.0),
+                              displayValue: meta.pickRate,
                               color: AppColors.copper,
                               label: 'PR',
                               tooltip: 'Pickrate',
-                              alignRight: true,
                             ),
                           ),
                         ],
@@ -145,63 +146,72 @@ class HeroCard extends StatelessWidget {
   }
 }
 
-class _RatePair extends StatelessWidget {
-  const _RatePair({
+class _RateMeter extends StatelessWidget {
+  const _RateMeter({
     required this.value,
     required this.color,
     required this.label,
     required this.tooltip,
-    this.alignRight = false,
+    this.displayValue,
   });
 
   final double value;
+  final double? displayValue;
   final Color color;
   final String label;
   final String tooltip;
-  final bool alignRight;
 
   @override
   Widget build(BuildContext context) {
+    final percent = (displayValue ?? value) * 100;
+
     return Tooltip(
       message: tooltip,
-      child: FittedBox(
-        fit: BoxFit.scaleDown,
-        alignment: alignRight ? Alignment.centerRight : Alignment.centerLeft,
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _RateValue(value: value, color: color),
-            Text(
-              ' $label',
-              style: const TextStyle(
-                color: AppColors.muted,
-                fontSize: 9,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 0.4,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              Text(
+                label,
+                style: const TextStyle(
+                  color: AppColors.muted,
+                  fontSize: 8.5,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.6,
+                ),
               ),
+              const SizedBox(width: 4),
+              Expanded(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    '${percent.toStringAsFixed(1)}%',
+                    maxLines: 1,
+                    style: TextStyle(
+                      color: color,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w900,
+                      height: 1.1,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 3),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(3),
+            child: LinearProgressIndicator(
+              value: value.clamp(0.0, 1.0),
+              minHeight: 4,
+              backgroundColor: AppColors.surfaceLight,
+              valueColor: AlwaysStoppedAnimation<Color>(color),
             ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _RateValue extends StatelessWidget {
-  const _RateValue({required this.value, required this.color});
-
-  final double value;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      '${(value * 100).toStringAsFixed(1)}%',
-      style: TextStyle(
-        color: color,
-        fontSize: 12,
-        fontWeight: FontWeight.w900,
-        height: 1.1,
+          ),
+        ],
       ),
     );
   }
@@ -214,18 +224,32 @@ class _TierBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = switch (tier.toUpperCase()) {
+      'S' => (const Color(0xFFC2313F), Colors.white),
+      'A' => (const Color(0xFFD97A2B), const Color(0xFF1B1008)),
+      'B' => (const Color(0xFFD9A441), const Color(0xFF1B1408)),
+      _ => (AppColors.surfaceLight, AppColors.muted),
+    };
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: AppColors.background.withValues(alpha: 0.72),
+        color: colors.$1,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.gold.withValues(alpha: 0.4)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.22)),
+        boxShadow: [
+          BoxShadow(
+            color: colors.$1.withValues(alpha: 0.55),
+            blurRadius: 8,
+            spreadRadius: 0.5,
+          ),
+        ],
       ),
       child: Text(
         tier,
-        style: const TextStyle(
-          color: AppColors.gold,
-          fontSize: 10,
+        style: TextStyle(
+          color: colors.$2,
+          fontSize: 11,
           fontWeight: FontWeight.w900,
           letterSpacing: 0.6,
         ),

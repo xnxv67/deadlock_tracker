@@ -218,7 +218,7 @@ class SkeletonBanner extends StatelessWidget {
                 ShimmerBox(width: 160, height: 20),
                 SizedBox(height: 10),
                 ShimmerBox(width: 100, height: 10),
-                SizedBox(height: 12),
+                SizedBox(height: 8),
                 ShimmerBox(width: 220, height: 12),
               ],
             ),

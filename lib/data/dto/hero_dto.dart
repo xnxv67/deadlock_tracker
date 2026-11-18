@@ -9,6 +9,7 @@ class HeroDto {
     required this.role,
     required this.imageUrl,
     required this.cardUrl,
+    this.backgroundUrl = '',
     required this.playerSelectable,
     required this.disabled,
   });
@@ -18,6 +19,9 @@ class HeroDto {
   final String role;
   final String imageUrl;
   final String cardUrl;
+
+  /// Крупный арт высокого разрешения из `images.background_image`.
+  final String backgroundUrl;
   final bool playerSelectable;
   final bool disabled;
 
@@ -37,6 +41,10 @@ class HeroDto {
         images['icon_hero_card'],
         jsonString(images['icon_image_small']),
       ),
+      backgroundUrl: jsonString(
+        images['background_image'],
+        jsonString(images['background_image_webp']),
+      ),
       playerSelectable: jsonBool(json['player_selectable'], true),
       disabled: jsonBool(json['disabled']),
     );
@@ -49,6 +57,7 @@ class HeroDto {
       role: role,
       imageUrl: imageUrl,
       cardUrl: cardUrl,
+      backgroundUrl: backgroundUrl,
     );
   }
 
@@ -60,6 +69,7 @@ class HeroDto {
       'role': role,
       'image': imageUrl,
       'card': cardUrl,
+      'bg': backgroundUrl,
       'selectable': playerSelectable,
       'disabled': disabled,
     };
@@ -73,6 +83,7 @@ class HeroDto {
       role: jsonString(json['role']),
       imageUrl: jsonString(json['image']),
       cardUrl: jsonString(json['card']),
+      backgroundUrl: jsonString(json['bg']),
       playerSelectable: jsonBool(json['selectable'], true),
       disabled: jsonBool(json['disabled']),
     );

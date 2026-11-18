@@ -33,7 +33,8 @@ class LeaderboardBloc extends Bloc<LeaderboardEvent, LeaderboardState> {
     Emitter<LeaderboardState> emit,
   ) async {
     if (state.region == event.region) return;
-    emit(state.copyWith(region: event.region));
+    // Старые строки другого региона не должны мелькать под новым выбором.
+    emit(state.copyWith(region: event.region, players: const []));
     await _load(emit);
   }
 

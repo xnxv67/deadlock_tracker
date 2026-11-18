@@ -4,8 +4,8 @@ import '../entities/leaderboard_player.dart';
 enum LeaderboardRegion {
   europe('Europe', 'EUROPE'),
   asia('Asia', 'ASIA'),
-  na('NAmerica', 'NA'),
-  sa('SAmerica', 'SA'),
+  na('NAmerica', 'СЕВ. АМЕРИКА'),
+  sa('SAmerica', 'ЮЖ. АМЕРИКА'),
   oceania('Oceania', 'OCEANIA');
 
   const LeaderboardRegion(this.apiValue, this.label);
