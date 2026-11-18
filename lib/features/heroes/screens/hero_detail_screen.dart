@@ -131,101 +131,101 @@ class _HeroDetailScreenState extends State<HeroDetailScreen> {
         ? hero.bannerUrl
         : 'https://assets.deadlock-api.com/v2/heroes/${hero.id}/icon';
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(14, 4, 14, 0),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final width = constraints.maxWidth;
-          final height = math.min(width * 9 / 16, _bannerMaxHeight);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        final height = math.min(width * 9 / 16, _bannerMaxHeight);
 
-          return ClipRRect(
-            borderRadius: BorderRadius.circular(18),
-            child: SizedBox(
-              width: width,
-              height: height,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  // BoxFit.cover внутри RemoteImage — без искажений.
-                  RemoteImage(
-                    url: url,
-                    fit: BoxFit.cover,
-                    useProxy: true,
-                    proxyWidth: 1400,
-                    fallback: DeadlockImageFallback(label: hero.name),
-                  ),
-                  // Мягкий переход в фон приложения снизу.
-                  const DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [Colors.transparent, AppColors.background],
-                        stops: [0.38, 1],
-                      ),
+        return ClipRRect(
+          borderRadius: const BorderRadius.vertical(
+            bottom: Radius.circular(22),
+          ),
+          child: SizedBox(
+            width: width,
+            height: height,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                // Фоновый арт: заполняет баннер без искажений.
+                RemoteImage(
+                  url: url,
+                  fit: BoxFit.cover,
+                  useProxy: true,
+                  proxyWidth: 1400,
+                  fallback: DeadlockImageFallback(label: hero.name),
+                ),
+                // Градиент: прозрачный верх → фон приложения снизу,
+                // чтобы имя героя читалось на любой картинке.
+                const DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [Colors.transparent, AppColors.background],
+                      stops: [0.3, 1],
                     ),
                   ),
-                  Positioned(
-                    left: 16,
-                    right: 16,
-                    bottom: 12,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          hero.name,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 26,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 0.6,
-                            height: 1.05,
-                            shadows: [
-                              Shadow(
-                                color: Colors.black,
-                                blurRadius: 12,
-                                offset: Offset(0, 2),
-                              ),
-                            ],
-                          ),
+                ),
+                Positioned(
+                  left: 16,
+                  right: 16,
+                  bottom: 14,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        hero.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 30,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.6,
+                          height: 1.02,
+                          shadows: [
+                            Shadow(
+                              color: Colors.black,
+                              blurRadius: 16,
+                              offset: Offset(0, 2),
+                            ),
+                          ],
                         ),
-                        if (hero.role.isNotEmpty) ...[
-                          const SizedBox(height: 5),
-                          Row(
-                            children: [
-                              Container(
-                                width: 14,
-                                height: 2,
-                                color: AppColors.copper,
-                              ),
-                              const SizedBox(width: 6),
-                              Flexible(
-                                child: Text(
-                                  hero.role.toUpperCase(),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                    color: AppColors.gold,
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w800,
-                                    letterSpacing: 1.5,
-                                  ),
+                      ),
+                      if (hero.role.isNotEmpty) ...[
+                        const SizedBox(height: 6),
+                        Row(
+                          children: [
+                            Container(
+                              width: 16,
+                              height: 2,
+                              color: AppColors.copper,
+                            ),
+                            const SizedBox(width: 7),
+                            Flexible(
+                              child: Text(
+                                hero.role.toUpperCase(),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: AppColors.gold,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 1.5,
                                 ),
                               ),
-                            ],
-                          ),
-                        ],
+                            ),
+                          ],
+                        ),
                       ],
-                    ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-          );
-        },
-      ),
+          ),
+        );
+      },
     );
   }
 
@@ -318,15 +318,16 @@ class _HeroDetailScreenState extends State<HeroDetailScreen> {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final tileWidth = (constraints.maxWidth - 10) / 2;
+        final tileWidth = (constraints.maxWidth - 8) / 2;
         return Wrap(
-          spacing: 10,
-          runSpacing: 10,
+          spacing: 8,
+          runSpacing: 8,
           children: [
             SizedBox(
               width: tileWidth,
               child: _StatBox(
                 label: 'Винрейт',
+                icon: Icons.percent_rounded,
                 value: formatPercent(stats.winRate),
                 color: AppColors.winRateColor(stats.winRate),
                 subtitle: '${formatCount(stats.matches)} матчей',
@@ -335,10 +336,11 @@ class _HeroDetailScreenState extends State<HeroDetailScreen> {
             SizedBox(
               width: tileWidth,
               child: _StatBox(
-                label: 'Средний урон',
+                label: 'Урон',
+                icon: Icons.local_fire_department_rounded,
                 value: _compact(stats.playerDamage),
                 color: AppColors.copper,
-                subtitle: 'за матч',
+                subtitle: 'в среднем за матч',
               ),
             ),
             SizedBox(
@@ -348,6 +350,7 @@ class _HeroDetailScreenState extends State<HeroDetailScreen> {
                 behavior: HitTestBehavior.opaque,
                 child: _StatBox(
                   label: 'KDA',
+                  icon: Icons.bolt_rounded,
                   value: stats.kdaRatio.toStringAsFixed(2),
                   color: AppColors.gold,
                   subtitle:
@@ -360,10 +363,11 @@ class _HeroDetailScreenState extends State<HeroDetailScreen> {
             SizedBox(
               width: tileWidth,
               child: _StatBox(
-                label: 'Net worth',
+                label: 'Net Worth',
+                icon: Icons.savings_rounded,
                 value: _compact(stats.netWorth),
                 color: AppColors.text,
-                subtitle: 'средний за матч',
+                subtitle: 'в среднем за матч',
               ),
             ),
           ],
@@ -384,7 +388,7 @@ class _HeroDetailScreenState extends State<HeroDetailScreen> {
     return _tabView([
       const _TabHint(
         icon: Icons.inventory_2_outlined,
-        text: 'Топ-3 сборки по винрейту. Предметы разбиты по стадиям игры.',
+        text: 'Топ-3 сборки по винрейту. Под каждым предметом — время покупки.',
       ),
       const SizedBox(height: 12),
       for (var index = 0; index < builds.length; index++) ...[
@@ -507,56 +511,68 @@ class _StatBox extends StatelessWidget {
     required this.value,
     required this.color,
     this.subtitle,
+    this.icon,
   });
 
   final String label;
   final String value;
   final Color color;
   final String? subtitle;
+  final IconData? icon;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 12),
+      padding: const EdgeInsets.fromLTRB(10, 8, 10, 9),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            label.toUpperCase(),
-            style: const TextStyle(
-              color: AppColors.muted,
-              fontSize: 8.5,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.9,
-            ),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  label.toUpperCase(),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: AppColors.muted,
+                    fontSize: 8,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.8,
+                  ),
+                ),
+              ),
+              if (icon != null)
+                Icon(icon, size: 12, color: color.withValues(alpha: 0.75)),
+            ],
           ),
-          const SizedBox(height: 5),
+          const SizedBox(height: 4),
           Text(
             value,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
               color: color,
-              fontSize: 19,
+              fontSize: 17,
               fontWeight: FontWeight.w900,
               height: 1.05,
             ),
           ),
           if (subtitle != null) ...[
-            const SizedBox(height: 3),
+            const SizedBox(height: 2),
             Text(
               subtitle!,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(
                 color: AppColors.muted,
-                fontSize: 9,
+                fontSize: 8.5,
                 height: 1.1,
               ),
             ),
@@ -594,7 +610,7 @@ class _BuildCard extends StatelessWidget {
       if (seconds != null) {
         if (seconds <= 600) {
           early.add(entry);
-        } else if (seconds <= 1500) {
+        } else if (seconds <= 1200) {
           mid.add(entry);
         } else {
           late.add(entry);
@@ -694,17 +710,17 @@ class _BuildCard extends StatelessWidget {
             const SizedBox(height: 10),
             _BuildStage(
               label: 'Ранняя игра',
-              hint: 'до 10 мин',
+              hint: '0–10 мин',
               entries: early,
             ),
             _BuildStage(
               label: 'Средняя игра',
-              hint: '10–25 мин',
+              hint: '10–20 мин',
               entries: mid,
             ),
             _BuildStage(
               label: 'Поздняя игра',
-              hint: '25+ мин',
+              hint: '20+ мин',
               entries: late,
             ),
           ],
@@ -790,21 +806,22 @@ class _ItemChip extends StatelessWidget {
     return Tooltip(
       message: entry.item.name,
       child: SizedBox(
-        width: 54,
+        width: 60,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            ItemIcon(item: entry.item, size: 30),
-            const SizedBox(height: 3),
+            ItemIcon(item: entry.item, size: 40),
+            const SizedBox(height: 4),
             Text(
               seconds == null ? '—' : formatDuration(seconds.round()),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: AppColors.muted,
-                fontSize: 8,
-                fontWeight: FontWeight.w600,
+              style: TextStyle(
+                color: seconds == null ? AppColors.muted : AppColors.text,
+                fontSize: 8.5,
+                fontWeight: FontWeight.w700,
+                height: 1.1,
               ),
             ),
           ],

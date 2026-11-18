@@ -107,6 +107,11 @@ class PlayerRepositoryImpl implements PlayerRepository {
           assists: match.assists,
           durationSeconds: match.durationSeconds,
           startTime: match.startTime,
+          heroDamage: match.heroDamage,
+          buildingDamage: match.buildingDamage,
+          netWorth: match.netWorth,
+          lastHits: match.lastHits,
+          denies: match.denies,
         ),
       );
     }

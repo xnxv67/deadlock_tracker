@@ -301,7 +301,7 @@ class _MainScreenState extends State<MainScreen> {
     if (_error != null) {
       return _ErrorState(message: _error!, onRetry: _loadMeta);
     }
-    return _HeroGrid(
+    return _TierLadder(
       heroes: _searchedMeta,
       favorites: _favorites,
       onToggle: _toggleFavorite,
@@ -320,7 +320,7 @@ class _MainScreenState extends State<MainScreen> {
     if (_error != null) {
       return _ErrorState(message: _error!, onRetry: _loadMeta);
     }
-    return _HeroGrid(
+    return _TierLadder(
       heroes: _favoriteMeta,
       favorites: _favorites,
       onToggle: _toggleFavorite,
@@ -498,8 +498,10 @@ class _ErrorState extends StatelessWidget {
   }
 }
 
-class _HeroGrid extends StatelessWidget {
-  const _HeroGrid({
+/// Лестница тиров: вертикальный список S/A/B/C, внутри каждого —
+/// горизонтальная карусель карточек героев этого тира.
+class _TierLadder extends StatelessWidget {
+  const _TierLadder({
     required this.heroes,
     required this.favorites,
     required this.onToggle,
@@ -510,6 +512,8 @@ class _HeroGrid extends StatelessWidget {
   final Set<int> favorites;
   final Future<void> Function(HeroMeta) onToggle;
   final String? emptyText;
+
+  static const List<String> _tierOrder = ['S', 'A', 'B', 'C'];
 
   @override
   Widget build(BuildContext context) {
@@ -533,28 +537,157 @@ class _HeroGrid extends StatelessWidget {
       );
     }
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final columns = (constraints.maxWidth / 180).floor().clamp(2, 6);
-        return GridView.builder(
-          padding: const EdgeInsets.all(14),
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: columns,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-            childAspectRatio: 0.75,
-          ),
-          itemCount: heroes.length,
-          itemBuilder: (context, index) {
-            final meta = heroes[index];
-            return HeroCard(
-              meta: meta,
-              isFavorite: favorites.contains(meta.hero.id),
-              onToggleFavorite: () => onToggle(meta),
-            );
-          },
+    // Порядок героев внутри тира сохраняем: он уже отсортирован
+    // выбранным режимом (имя / винрейт / пикрейт).
+    final groups = <String, List<HeroMeta>>{};
+    for (final meta in heroes) {
+      groups.putIfAbsent(meta.tier, () => <HeroMeta>[]).add(meta);
+    }
+
+    final tiers = _tierOrder.where((tier) => groups[tier]?.isNotEmpty ?? false)
+        .toList(growable: false);
+
+    return ListView.separated(
+      padding: const EdgeInsets.fromLTRB(14, 10, 0, 26),
+      itemCount: tiers.length,
+      separatorBuilder: (_, _) => const SizedBox(height: 16),
+      itemBuilder: (context, index) {
+        final tier = tiers[index];
+        final tierHeroes = groups[tier] ?? const <HeroMeta>[];
+        return _TierRow(
+          tier: tier,
+          heroes: tierHeroes,
+          favorites: favorites,
+          onToggle: onToggle,
         );
       },
+    );
+  }
+}
+
+class _TierRow extends StatelessWidget {
+  const _TierRow({
+    required this.tier,
+    required this.heroes,
+    required this.favorites,
+    required this.onToggle,
+  });
+
+  final String tier;
+  final List<HeroMeta> heroes;
+  final Set<int> favorites;
+  final Future<void> Function(HeroMeta) onToggle;
+
+  static const double _cardWidth = 172;
+  static const double _rowHeight = 232;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: _rowHeight,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _TierMarker(tier: tier, count: heroes.length),
+          const SizedBox(width: 12),
+          Expanded(
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.only(right: 14),
+              itemCount: heroes.length,
+              separatorBuilder: (_, _) => const SizedBox(width: 10),
+              itemBuilder: (context, index) {
+                final meta = heroes[index];
+                return SizedBox(
+                  width: _cardWidth,
+                  child: HeroCard(
+                    meta: meta,
+                    isFavorite: favorites.contains(meta.hero.id),
+                    onToggleFavorite: () => onToggle(meta),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Крупный контрастный маркер тира слева от карусели.
+class _TierMarker extends StatelessWidget {
+  const _TierMarker({required this.tier, required this.count});
+
+  final String tier;
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = switch (tier.toUpperCase()) {
+      'S' => (const Color(0xFFC2313F), const Color(0xFF7C1F2D), Colors.white),
+      'A' => (
+        const Color(0xFFE08634),
+        const Color(0xFF8C4A16),
+        const Color(0xFF1B1008),
+      ),
+      'B' => (
+        const Color(0xFFD9A441),
+        const Color(0xFF8A6420),
+        const Color(0xFF1B1408),
+      ),
+      _ => (AppColors.surfaceLight, const Color(0xFF241A1D), AppColors.muted),
+    };
+
+    return Container(
+      width: 56,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [colors.$1, colors.$2],
+        ),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.16)),
+        boxShadow: [
+          BoxShadow(
+            color: colors.$1.withValues(alpha: 0.4),
+            blurRadius: 14,
+            spreadRadius: 0.5,
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            tier.toUpperCase(),
+            style: TextStyle(
+              color: colors.$3,
+              fontSize: 28,
+              fontWeight: FontWeight.w900,
+              height: 1,
+              letterSpacing: 0.5,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+            decoration: BoxDecoration(
+              color: Colors.black.withValues(alpha: 0.22),
+              borderRadius: BorderRadius.circular(7),
+            ),
+            child: Text(
+              '$count',
+              style: TextStyle(
+                color: colors.$3.withValues(alpha: 0.9),
+                fontSize: 10,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
