@@ -1,11 +1,11 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
 import '../../core/theme/app_theme.dart';
-import 'items_screen.dart';
+import '../../features/items/screens/items_screen.dart';
+import 'counter_matrix_screen.dart';
 import 'leaderboard_screen.dart';
 import 'meta_screen.dart';
 import 'player_screen.dart';
-import 'counter_matrix_screen.dart';
 
 class MainShell extends StatefulWidget {
   const MainShell({super.key});
@@ -23,9 +23,9 @@ class _MainShellState extends State<MainShell> {
   static const List<Widget> _tabs = [
     MetaScreen(),
     PlayerScreen(),
-    ItemsScreen(),
     LeaderboardScreen(),
     CounterMatrixScreen(),
+    ItemsScreen(),
   ];
 
   void _select(int index) {
@@ -72,16 +72,16 @@ class _MainShellState extends State<MainShell> {
               label: 'Игрок',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.inventory_2_rounded),
-              label: 'Предметы',
-            ),
-            BottomNavigationBarItem(
               icon: Icon(Icons.emoji_events_rounded),
               label: 'Лидеры',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.grid_on_rounded),
-              label: 'Матрица',
+              label: 'Контрпики',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.backpack_rounded),
+              label: 'Предметы',
             ),
           ],
         ),
