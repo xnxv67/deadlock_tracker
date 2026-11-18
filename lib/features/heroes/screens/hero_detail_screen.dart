@@ -2,7 +2,7 @@ import 'package:flutter/material.dart' hide Hero;
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/theme/app_theme.dart';
-import '../../../data/models/hero.dart';
+import '../../../domain/entities/hero.dart';
 import '../../../domain/entities/hero_build.dart';
 import '../../../domain/entities/hero_counter.dart';
 import '../../../domain/entities/hero_detailed_stats.dart';
@@ -23,6 +23,8 @@ class HeroDetailScreen extends StatefulWidget {
 }
 
 class _HeroDetailScreenState extends State<HeroDetailScreen> {
+  static const int _labsClicks = 10;
+
   int _clickCount = 0;
 
   HeroDetailedStats? _stats;
@@ -31,11 +33,11 @@ class _HeroDetailScreenState extends State<HeroDetailScreen> {
   HeroTrend? _trend;
   bool _loading = true;
 
-  /// Пасхалка открывается только у Inferno (id 6 в Deadlock API).
-  bool get _isInferno =>
-      widget.hero.name.toLowerCase() == 'inferno' ||
-      widget.hero.name.toLowerCase() == 'infernus' ||
-      widget.hero.id == 6;
+  /// Пасхалка открывается только у Inferno (id 1 в Deadlock API).
+  bool get _isInferno {
+    final name = widget.hero.name.toLowerCase();
+    return name == 'inferno' || name == 'infernus' || widget.hero.id == 1;
+  }
 
   @override
   void initState() {
@@ -43,33 +45,43 @@ class _HeroDetailScreenState extends State<HeroDetailScreen> {
     _load();
   }
 
+  Future<T?> _safely<T>(Future<T?> Function() task) async {
+    try {
+      return await task();
+    } catch (_) {
+      return null;
+    }
+  }
+
   Future<void> _load() async {
     final repo = context.read<HeroRepository>();
-    try {
-      final results = await Future.wait([
-        repo.getHeroDetailedStats(widget.hero.id),
-        repo.getCounters(widget.hero.id),
-        repo.getBuilds(widget.hero.id),
-        repo.getHeroTrend(widget.hero.id),
-      ]);
-      if (!mounted) return;
-      setState(() {
-        _stats = results[0] as HeroDetailedStats?;
-        _counters = results[1] as List<HeroCounter>;
-        _builds = results[2] as List<HeroBuild>;
-        _trend = results[3] as HeroTrend?;
-        _loading = false;
-      });
-    } catch (_) {
-      if (!mounted) return;
-      setState(() => _loading = false);
-    }
+    final heroId = widget.hero.id;
+
+    // Запросы стартуют одновременно, падение одного не ломает остальные.
+    final statsFuture = _safely(() => repo.getHeroDetailedStats(heroId));
+    final countersFuture = _safely(() => repo.getCounters(heroId));
+    final buildsFuture = _safely(() => repo.getBuilds(heroId));
+    final trendFuture = _safely(() => repo.getHeroTrend(heroId));
+
+    final stats = await statsFuture;
+    final counters = await countersFuture;
+    final builds = await buildsFuture;
+    final trend = await trendFuture;
+
+    if (!mounted) return;
+    setState(() {
+      _stats = stats;
+      _counters = counters ?? const [];
+      _builds = builds ?? const [];
+      _trend = trend;
+      _loading = false;
+    });
   }
 
   Future<void> _onKdaTap() async {
     if (!_isInferno) return;
     _clickCount++;
-    if (_clickCount >= 10) {
+    if (_clickCount >= _labsClicks) {
       _clickCount = 0;
       await Navigator.of(context).push(
         MaterialPageRoute<void>(builder: (_) => const LabsScreen()),
@@ -110,8 +122,15 @@ class _HeroDetailScreenState extends State<HeroDetailScreen> {
   }
 
   Widget _banner() {
-    final url =
-        widget.hero.cardUrl.isNotEmpty ? widget.hero.cardUrl : widget.hero.imageUrl;
+    final hero = widget.hero;
+    var url = hero.cardUrl;
+    if (url.isEmpty) {
+      url = hero.imageUrl;
+    }
+    if (url.isEmpty) {
+      url = 'https://assets.deadlock-api.com/v2/heroes/${hero.id}/icon';
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -121,42 +140,33 @@ class _HeroDetailScreenState extends State<HeroDetailScreen> {
             aspectRatio: 16 / 9,
             child: Container(
               color: AppColors.surfaceLight,
-              child: url.isNotEmpty
-                  ? Image.network(
-                      url,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) =>
-                          const Center(
-                        child: Icon(
-                          Icons.sports_esports_rounded,
-                          size: 64,
-                          color: AppColors.muted,
-                        ),
-                      ),
-                    )
-                  : const Center(
-                      child: Icon(
-                        Icons.sports_esports_rounded,
-                        size: 64,
-                        color: AppColors.muted,
-                      ),
-                    ),
+              child: Image.network(
+                url,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) => const Center(
+                  child: Icon(
+                    Icons.sports_esports_rounded,
+                    size: 64,
+                    color: AppColors.muted,
+                  ),
+                ),
+              ),
             ),
           ),
         ),
         const SizedBox(height: 18),
         Text(
-          widget.hero.name,
+          hero.name,
           style: const TextStyle(
             fontSize: 26,
             fontWeight: FontWeight.w900,
             letterSpacing: 0.6,
           ),
         ),
-        if (widget.hero.role.isNotEmpty) ...[
+        if (hero.role.isNotEmpty) ...[
           const SizedBox(height: 4),
           Text(
-            widget.hero.role,
+            hero.role,
             style: const TextStyle(
               color: AppColors.copper,
               fontSize: 13,
@@ -238,9 +248,9 @@ class _HeroDetailScreenState extends State<HeroDetailScreen> {
     }
     final worst = [..._counters]
       ..sort((a, b) => a.winRate.compareTo(b.winRate));
-    final shown = worst.take(3).toList();
+    final shown = worst.take(5).toList();
     return _SectionCard(
-      title: 'Счётчики',
+      title: 'Худшие матчапы',
       child: Column(
         children: [
           for (var i = 0; i < shown.length; i++) ...[
