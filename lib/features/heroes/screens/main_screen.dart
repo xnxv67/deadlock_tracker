@@ -6,6 +6,8 @@ import '../../../domain/entities/hero_meta.dart';
 import '../../../domain/repositories/hero_repository.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../favorites/favorites_service.dart';
+import '../../leaderboard/screens/leaderboard_screen.dart';
+import '../../players/screens/player_search_screen.dart';
 import '../widgets/hero_card.dart';
 
 /// Варианты сортировки списка героев.
@@ -148,42 +150,52 @@ class _MainScreenState extends State<MainScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(_tab == 0 ? l10n.heroesTab : l10n.favoritesTab),
+        title: Text(_title(l10n)),
         actions: [
-          PopupMenuButton<HeroSort>(
-            tooltip: 'Сортировка',
-            icon: const Icon(Icons.sort_rounded),
-            initialValue: _sort,
-            onSelected: (sort) => setState(() => _sort = sort),
-            itemBuilder: (context) => [
-              for (final sort in HeroSort.values)
-                PopupMenuItem<HeroSort>(
-                  value: sort,
-                  child: Row(
-                    children: [
-                      Icon(
-                        sort == _sort
-                            ? Icons.radio_button_checked
-                            : Icons.radio_button_unchecked,
-                        size: 18,
-                        color: sort == _sort
-                            ? AppColors.gold
-                            : AppColors.muted,
-                      ),
-                      const SizedBox(width: 10),
-                      Text(sort.label),
-                    ],
+          if (_tab == 0)
+            PopupMenuButton<HeroSort>(
+              tooltip: 'Сортировка',
+              icon: const Icon(Icons.sort_rounded),
+              initialValue: _sort,
+              onSelected: (sort) => setState(() => _sort = sort),
+              itemBuilder: (context) => [
+                for (final sort in HeroSort.values)
+                  PopupMenuItem<HeroSort>(
+                    value: sort,
+                    child: Row(
+                      children: [
+                        Icon(
+                          sort == _sort
+                              ? Icons.radio_button_checked
+                              : Icons.radio_button_unchecked,
+                          size: 18,
+                          color: sort == _sort
+                              ? AppColors.gold
+                              : AppColors.muted,
+                        ),
+                        const SizedBox(width: 10),
+                        Text(sort.label),
+                      ],
+                    ),
                   ),
-                ),
-            ],
-          ),
+              ],
+            ),
         ],
       ),
       body: Column(
         children: [
-          if (_tab == 0) _SearchField(controller: _searchController, onChanged: _onSearchChanged),
+          if (_tab == 0)
+            _SearchField(
+              controller: _searchController,
+              onChanged: _onSearchChanged,
+            ),
           Expanded(
-            child: _tab == 0 ? _heroesTab(l10n) : _favoritesTab(l10n),
+            child: switch (_tab) {
+              0 => _heroesTab(l10n),
+              1 => _favoritesTab(l10n),
+              2 => const LeaderboardScreen(),
+              _ => const PlayerSearchScreen(),
+            },
           ),
         ],
       ),
@@ -194,6 +206,8 @@ class _MainScreenState extends State<MainScreen> {
         backgroundColor: AppColors.surface,
         selectedItemColor: AppColors.gold,
         unselectedItemColor: AppColors.muted,
+        selectedFontSize: 10.5,
+        unselectedFontSize: 10,
         items: [
           BottomNavigationBarItem(
             icon: const Icon(Icons.people_alt_rounded),
@@ -203,9 +217,26 @@ class _MainScreenState extends State<MainScreen> {
             icon: const Icon(Icons.favorite_rounded),
             label: l10n.favoritesTab,
           ),
+          const BottomNavigationBarItem(
+            icon: Icon(Icons.emoji_events_rounded),
+            label: 'Лидеры',
+          ),
+          const BottomNavigationBarItem(
+            icon: Icon(Icons.person_search_rounded),
+            label: 'Поиск игрока',
+          ),
         ],
       ),
     );
+  }
+
+  String _title(AppLocalizations l10n) {
+    return switch (_tab) {
+      0 => l10n.heroesTab,
+      1 => l10n.favoritesTab,
+      2 => 'Лидеры',
+      _ => 'Поиск игрока',
+    };
   }
 
   void _onSearchChanged(String value) {

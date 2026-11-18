@@ -2,6 +2,7 @@ import 'package:flutter/material.dart' hide Hero;
 
 import '../../core/theme/app_theme.dart';
 import '../../domain/entities/hero.dart';
+import 'remote_image.dart';
 
 class HeroAvatar extends StatelessWidget {
   const HeroAvatar({
@@ -30,36 +31,11 @@ class HeroAvatar extends StatelessWidget {
         border: Border.all(color: borderColor ?? AppColors.border),
       ),
       clipBehavior: Clip.antiAlias,
-      child: hero.hasImage
-          ? Image.network(
-              hero.imageUrl,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) =>
-                  _AvatarFallback(size: size),
-              loadingBuilder: (context, child, progress) {
-                if (progress == null) {
-                  return child;
-                }
-                return const ColoredBox(color: AppColors.surfaceLight);
-              },
-            )
-          : _AvatarFallback(size: size),
-    );
-  }
-}
-
-class _AvatarFallback extends StatelessWidget {
-  const _AvatarFallback({required this.size});
-
-  final double size;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Icon(
-        Icons.person_outline,
-        size: size * 0.5,
-        color: AppColors.muted,
+      child: RemoteImage(
+        url: hero.imageUrl,
+        useProxy: true,
+        proxyWidth: 128,
+        fallback: const DeadlockImageFallback(),
       ),
     );
   }

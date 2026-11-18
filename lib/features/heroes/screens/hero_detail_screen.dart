@@ -10,6 +10,7 @@ import '../../../domain/entities/hero_trend.dart';
 import '../../../domain/repositories/hero_repository.dart';
 import '../../../presentation/widgets/hero_trend_chart.dart';
 import '../../../presentation/widgets/item_icon.dart';
+import '../../../presentation/widgets/remote_image.dart';
 import '../../secret/screens/labs_screen.dart';
 
 /// Детальный экран героя: статистика, счётчики, сборки и тренд.
@@ -140,16 +141,11 @@ class _HeroDetailScreenState extends State<HeroDetailScreen> {
             aspectRatio: 16 / 9,
             child: Container(
               color: AppColors.surfaceLight,
-              child: Image.network(
-                url,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => const Center(
-                  child: Icon(
-                    Icons.sports_esports_rounded,
-                    size: 64,
-                    color: AppColors.muted,
-                  ),
-                ),
+              child: RemoteImage(
+                url: url,
+                useProxy: true,
+                proxyWidth: 1000,
+                fallback: DeadlockImageFallback(label: hero.name),
               ),
             ),
           ),

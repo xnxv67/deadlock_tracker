@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../domain/entities/hero_meta.dart';
+import '../../../presentation/widgets/remote_image.dart';
 import '../screens/hero_detail_screen.dart';
 
 /// Карточка героя: изображение, имя, роль, винрейт/пикрейт, кнопка лайка.
@@ -63,7 +64,7 @@ class HeroCard extends StatelessWidget {
                   child: Stack(
                     fit: StackFit.expand,
                     children: [
-                      _HeroImage(url: _imageUrl),
+                      _HeroImage(url: _imageUrl, label: hero.name),
                       Positioned(
                         top: 8,
                         right: 8,
@@ -112,37 +113,22 @@ class HeroCard extends StatelessWidget {
                       const SizedBox(height: 7),
                       Row(
                         children: [
-                          Tooltip(
-                            message: 'Winrate',
-                            child: _RateValue(
+                          Expanded(
+                            child: _RatePair(
                               value: meta.winRate,
                               color: AppColors.winRateColor(meta.winRate),
+                              label: 'WR',
+                              tooltip: 'Winrate',
                             ),
                           ),
-                          const Text(
-                            ' WR',
-                            style: TextStyle(
-                              color: AppColors.muted,
-                              fontSize: 9,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 0.4,
-                            ),
-                          ),
-                          const Spacer(),
-                          Tooltip(
-                            message: 'Pickrate',
-                            child: _RateValue(
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: _RatePair(
                               value: meta.pickRate,
                               color: AppColors.copper,
-                            ),
-                          ),
-                          const Text(
-                            ' PR',
-                            style: TextStyle(
-                              color: AppColors.muted,
-                              fontSize: 9,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 0.4,
+                              label: 'PR',
+                              tooltip: 'Pickrate',
+                              alignRight: true,
                             ),
                           ),
                         ],
@@ -153,6 +139,48 @@ class HeroCard extends StatelessWidget {
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _RatePair extends StatelessWidget {
+  const _RatePair({
+    required this.value,
+    required this.color,
+    required this.label,
+    required this.tooltip,
+    this.alignRight = false,
+  });
+
+  final double value;
+  final Color color;
+  final String label;
+  final String tooltip;
+  final bool alignRight;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        alignment: alignRight ? Alignment.centerRight : Alignment.centerLeft,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _RateValue(value: value, color: color),
+            Text(
+              ' $label',
+              style: const TextStyle(
+                color: AppColors.muted,
+                fontSize: 9,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.4,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -207,31 +235,18 @@ class _TierBadge extends StatelessWidget {
 }
 
 class _HeroImage extends StatelessWidget {
-  const _HeroImage({required this.url});
+  const _HeroImage({required this.url, required this.label});
 
   final String url;
+  final String label;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: AppColors.surfaceLight,
-      child: Image.network(
-        url,
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) => const Center(
-          child: Icon(
-            Icons.sports_esports_rounded,
-            size: 42,
-            color: AppColors.muted,
-          ),
-        ),
-        loadingBuilder: (context, child, progress) {
-          if (progress == null) {
-            return child;
-          }
-          return const ColoredBox(color: AppColors.surfaceLight);
-        },
-      ),
+    return RemoteImage(
+      url: url,
+      useProxy: true,
+      proxyWidth: 600,
+      fallback: DeadlockImageFallback(label: label),
     );
   }
 }

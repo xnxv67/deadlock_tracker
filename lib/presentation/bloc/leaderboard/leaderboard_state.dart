@@ -32,6 +32,7 @@ class LeaderboardState extends Equatable {
       status: status ?? this.status,
       players: players ?? this.players,
       error: clearError ? null : (error ?? this.error),
+      region: region ?? this.region,
     );
   }
 

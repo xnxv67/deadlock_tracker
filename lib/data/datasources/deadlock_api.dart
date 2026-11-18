@@ -210,10 +210,22 @@ class DeadlockApi {
     ).where((item) => item.itemId > 0).toList();
   }
 
-  Future<List<PlayerHeroStatsDto>> getPlayerHeroStats(int accountId) async {
+  Future<List<PlayerHeroStatsDto>> getPlayerHeroStats(int accountId) {
+    return getPlayersHeroStats([accountId]);
+  }
+
+  /// Статистика героев сразу для нескольких игроков (до 1000 account_id).
+  Future<List<PlayerHeroStatsDto>> getPlayersHeroStats(
+    Iterable<int> accountIds,
+  ) async {
+    final ids = accountIds.where((id) => id > 0).toSet().toList()..sort();
+    if (ids.isEmpty) {
+      return const [];
+    }
+
     final data = await _get(
       '/players/hero-stats',
-      query: {'account_ids': accountId},
+      query: {'account_ids': ids.join(',')},
     );
     return _parseList(
       data,

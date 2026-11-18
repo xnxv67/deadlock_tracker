@@ -47,6 +47,19 @@ class LeaderboardRepositoryImpl implements LeaderboardRepository {
         }
       }
 
+      // Победы берём одним батч-запросом. Если API не ответил — покажем «—».
+      final wins = <int, int>{};
+      if (singleIds.isNotEmpty) {
+        try {
+          final stats = await _api.getPlayersHeroStats(singleIds);
+          for (final stat in stats) {
+            wins[stat.accountId] = (wins[stat.accountId] ?? 0) + stat.wins;
+          }
+        } catch (_) {
+          // Победы не критичны для отображения таблицы.
+        }
+      }
+
       final tiers = rankTiers
           .map(
             (dto) => RankTier(
@@ -60,11 +73,10 @@ class LeaderboardRepositoryImpl implements LeaderboardRepository {
       final result = <LeaderboardPlayer>[];
       for (final entry in entries) {
         PlayerBadge? badge;
+        int? accountId;
         if (entry.possibleAccountIds.length == 1) {
-          badge = PlayerBadge.fromBadge(
-            badges[entry.possibleAccountIds.first] ?? 0,
-            tiers,
-          );
+          accountId = entry.possibleAccountIds.first;
+          badge = PlayerBadge.fromBadge(badges[accountId] ?? 0, tiers);
         }
 
         final heroes = <Hero>[];
@@ -81,6 +93,8 @@ class LeaderboardRepositoryImpl implements LeaderboardRepository {
             name: entry.name,
             badge: badge,
             topHeroes: heroes,
+            accountId: accountId,
+            wins: accountId == null ? null : wins[accountId],
           ),
         );
       }

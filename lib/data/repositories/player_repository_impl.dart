@@ -156,6 +156,35 @@ class PlayerRepositoryImpl implements PlayerRepository {
     }
   }
 
+  @override
+  Future<Map<int, PlayerBadge>> getRanks(List<int> accountIds) async {
+    final ids = accountIds.where((id) => id > 0).toSet().toList();
+    if (ids.isEmpty) {
+      return const {};
+    }
+    return _guard(() async {
+      final ranks = await _api.getPlayerRanks(ids);
+      final tiers = (await _catalog.rankTiers())
+          .map(
+            (dto) => RankTier(
+              tier: dto.tier,
+              name: dto.name,
+              colorHex: dto.colorHex,
+            ),
+          )
+          .toList(growable: false);
+
+      final result = <int, PlayerBadge>{};
+      for (final rank in ranks) {
+        final badge = PlayerBadge.fromBadge(rank.badge, tiers);
+        if (badge != null) {
+          result[rank.accountId] = badge;
+        }
+      }
+      return result;
+    });
+  }
+
   Future<T> _guard<T>(Future<T> Function() action) async {
     try {
       return await action();

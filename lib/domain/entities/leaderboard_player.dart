@@ -10,6 +10,8 @@ class LeaderboardPlayer extends Equatable {
     required this.name,
     required this.badge,
     required this.topHeroes,
+    this.accountId,
+    this.wins,
   });
 
   final int position;
@@ -17,8 +19,21 @@ class LeaderboardPlayer extends Equatable {
   final PlayerBadge? badge;
   final List<Hero> topHeroes;
 
+  /// account_id, если API вернул однозначный вариант.
+  final int? accountId;
+
+  /// Суммарные победы по статистике героев, если удалось получить.
+  final int? wins;
+
   bool get isTopThree => position <= 3;
 
   @override
-  List<Object?> get props => [position, name, badge, topHeroes];
+  List<Object?> get props => [
+    position,
+    name,
+    badge,
+    topHeroes,
+    accountId,
+    wins,
+  ];
 }

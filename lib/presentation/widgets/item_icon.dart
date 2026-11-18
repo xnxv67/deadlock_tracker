@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../domain/entities/item.dart';
+import 'remote_image.dart';
 
 class ItemIcon extends StatelessWidget {
   const ItemIcon({
@@ -26,36 +27,11 @@ class ItemIcon extends StatelessWidget {
         border: Border.all(color: borderColor ?? AppColors.border),
       ),
       clipBehavior: Clip.antiAlias,
-      child: item.hasImage
-          ? Image.network(
-              item.imageUrl,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) =>
-                  _Fallback(size: size),
-              loadingBuilder: (context, child, progress) {
-                if (progress == null) {
-                  return child;
-                }
-                return const ColoredBox(color: AppColors.surfaceLight);
-              },
-            )
-          : _Fallback(size: size),
-    );
-  }
-}
-
-class _Fallback extends StatelessWidget {
-  const _Fallback({required this.size});
-
-  final double size;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Icon(
-        Icons.inventory_2_outlined,
-        size: size * 0.5,
-        color: AppColors.muted,
+      child: RemoteImage(
+        url: item.imageUrl,
+        useProxy: true,
+        proxyWidth: 160,
+        fallback: const DeadlockImageFallback(),
       ),
     );
   }
