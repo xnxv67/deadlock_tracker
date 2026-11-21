@@ -1,11 +1,4 @@
-enum AppErrorType {
-  network,
-  rateLimited,
-  timeout,
-  server,
-  notFound,
-  unknown,
-}
+enum AppErrorType { network, rateLimited, timeout, server, notFound, unknown }
 
 class AppException implements Exception {
   const AppException(this.type, [this.message = '']);

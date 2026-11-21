@@ -14,6 +14,7 @@ class AppColors {
   static const Color burgundyBright = Color(0xFFA62B3C);
   static const Color copper = Color(0xFFB87333);
   static const Color gold = Color(0xFFD9A441);
+  static const Color ember = Color(0xFFE0731F);
 
   static const Color text = Color(0xFFF1E7DC);
   static const Color muted = Color(0xFF9C8A85);

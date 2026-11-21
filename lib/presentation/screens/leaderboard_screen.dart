@@ -65,7 +65,8 @@ class _LeaderboardView extends StatelessWidget {
                           PageHeader(
                             eyebrow: 'Рейтинг',
                             title: 'ЛИДЕРЫ',
-                            subtitle: 'Топ-100 ${state.region.label} · место, никнейм и ранг',
+                            subtitle:
+                                'Топ-100 ${state.region.label} · место, никнейм и ранг',
                             watermark: 'TOP',
                             trailing: _RegionSelector(selected: state.region),
                           ),
@@ -257,9 +258,9 @@ class _RegionSelector extends StatelessWidget {
       children: [
         for (final region in LeaderboardRegion.values)
           GestureDetector(
-            onTap: () => context
-                .read<LeaderboardBloc>()
-                .add(LeaderboardRegionChanged(region)),
+            onTap: () => context.read<LeaderboardBloc>().add(
+              LeaderboardRegionChanged(region),
+            ),
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
@@ -276,9 +277,7 @@ class _RegionSelector extends StatelessWidget {
               child: Text(
                 region.label,
                 style: TextStyle(
-                  color: region == selected
-                      ? AppColors.gold
-                      : AppColors.muted,
+                  color: region == selected ? AppColors.gold : AppColors.muted,
                   fontSize: 8.5,
                   fontWeight: FontWeight.w800,
                   letterSpacing: 1.0,

@@ -15,10 +15,14 @@ import '../dto/hero_synergy_dto.dart';
 import '../dto/item_asset_dto.dart';
 import '../dto/item_stats_dto.dart';
 import '../dto/json_utils.dart';
+import '../dto/lane_matchup_dto.dart';
+import '../dto/lane_soul_curve_dto.dart';
 import '../dto/leaderboard_entry_dto.dart';
+import '../dto/performance_curve_dto.dart';
 import '../dto/popular_item_dto.dart';
 import '../dto/match_history_dto.dart';
 import '../dto/player_hero_stats_dto.dart';
+import '../dto/player_metrics_dto.dart';
 import '../dto/player_rank_dto.dart';
 import '../dto/rank_tier_dto.dart';
 import '../dto/steam_profile_dto.dart';
@@ -233,10 +237,86 @@ class DeadlockApi {
     ).where((item) => item.heroId > 0).toList();
   }
 
+  /// Статистика игрока на линиях за последние 90 дней.
+  Future<List<LaneMatchupDto>> getPlayerLaneMatchups(int accountId) async {
+    final data = await _get(
+      '/analytics/lane-matchup-stats',
+      query: {
+        'account_ids': '$accountId',
+        'group_by': 'assigned_lane,hero_ids',
+        'sample_time_s': 600,
+        'min_matches': 1,
+        'stats': 'net_worth,denies,creep_kills',
+        'min_unix_timestamp': _analysisWindowStart,
+      },
+    );
+    return _parseList(
+      data,
+      LaneMatchupDto.fromJson,
+    ).where((item) => item.laneId > 0 && item.matches > 0).toList();
+  }
+
+  /// Кривая разницы душ на линиях за последние 90 дней.
+  Future<List<LaneSoulCurveDto>> getPlayerLaneSoulCurve(int accountId) async {
+    final data = await _get(
+      '/analytics/lane-soul-curve',
+      query: {
+        'account_ids': '$accountId',
+        'group_by': 'assigned_lane,hero_ids',
+        'min_time_s': 0,
+        'max_time_s': 1500,
+        'min_matches': 1,
+        'min_unix_timestamp': _analysisWindowStart,
+      },
+    );
+    return _parseList(
+      data,
+      LaneSoulCurveDto.fromJson,
+    ).where((item) => item.sampleTimes.isNotEmpty).toList();
+  }
+
+  /// Средние показатели игрока по ходу матчей.
+  Future<List<PerformanceCurveDto>> getPlayerPerformanceCurve(
+    int accountId,
+  ) async {
+    final data = await _get(
+      '/analytics/player-performance-curve',
+      query: {
+        'account_ids': '$accountId',
+        'resolution': 10,
+        'min_unix_timestamp': _analysisWindowStart,
+      },
+    );
+    return _parseList(data, PerformanceCurveDto.fromJson)
+      ..sort((first, second) => first.gameTime.compareTo(second.gameTime));
+  }
+
+  /// Распределение метрик игрока по его матчам.
+  Future<PlayerMetricsDto?> getPlayerMetrics(int accountId) async {
+    final data = await _get(
+      '/analytics/player-stats/metrics',
+      query: {
+        'account_ids': '$accountId',
+        'min_unix_timestamp': _analysisWindowStart,
+      },
+    );
+    final map = jsonMap(data);
+    if (map.isEmpty) {
+      return null;
+    }
+    final metrics = PlayerMetricsDto.fromJson(map);
+    return metrics.isEmpty ? null : metrics;
+  }
+
+  int get _analysisWindowStart {
+    final from = DateTime.now().subtract(const Duration(days: 90));
+    return from.millisecondsSinceEpoch ~/ 1000;
+  }
+
   /// Последние матчи игрока.
   ///
   /// Эндпоинт отдаёт всю историю (несколько тысяч записей), поэтому в кэш
-  /// кладём только 20 самых свежих матчей в компактном виде.
+  /// кладём только 50 самых свежих матчей в компактном виде.
   Future<List<MatchHistoryDto>> getMatchHistory(int accountId) async {
     final key = 'matches_v1_$accountId';
     final cached = await _cache.read(key);
@@ -261,7 +341,7 @@ class DeadlockApi {
           (first, second) => second.startTime.compareTo(first.startTime),
         );
 
-    final recent = matches.take(20).toList(growable: false);
+    final recent = matches.take(50).toList(growable: false);
     if (recent.isNotEmpty) {
       await _cache.write(
         key,

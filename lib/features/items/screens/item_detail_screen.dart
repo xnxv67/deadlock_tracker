@@ -76,7 +76,10 @@ class ItemDetailScreen extends StatelessWidget {
             _InfoCard(
               children: [
                 _InfoRow(label: 'Win Rate', value: formatPercent(meta.winRate)),
-                _InfoRow(label: 'Pick Rate', value: formatPercent(meta.pickRate)),
+                _InfoRow(
+                  label: 'Pick Rate',
+                  value: formatPercent(meta.pickRate),
+                ),
                 _InfoRow(label: 'Матчи', value: formatCount(meta.matches)),
                 _InfoRow(label: 'Победы', value: formatCount(meta.wins)),
                 _InfoRow(
@@ -129,7 +132,10 @@ class _InfoCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppColors.surfaceLight),
       ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: children),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: children,
+      ),
     );
   }
 }
@@ -184,8 +190,14 @@ class _ChipStat extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(label, style: const TextStyle(color: AppColors.muted, fontSize: 10)),
-              Text(value, style: TextStyle(color: color, fontWeight: FontWeight.w700)),
+              Text(
+                label,
+                style: const TextStyle(color: AppColors.muted, fontSize: 10),
+              ),
+              Text(
+                value,
+                style: TextStyle(color: color, fontWeight: FontWeight.w700),
+              ),
             ],
           ),
         ],
@@ -203,7 +215,11 @@ class _TopBuyersSection extends StatefulWidget {
 }
 
 class _HeroBuyStat {
-  const _HeroBuyStat({required this.heroId, required this.heroName, required this.pickPct});
+  const _HeroBuyStat({
+    required this.heroId,
+    required this.heroName,
+    required this.pickPct,
+  });
   final int heroId;
   final String heroName;
   final double pickPct;
@@ -229,28 +245,30 @@ class _TopBuyersSectionState extends State<_TopBuyersSection> {
       const batchSize = 10;
       for (var i = 0; i < heroes.length; i += batchSize) {
         final batch = heroes.skip(i).take(batchSize).toList();
-        final results = await Future.wait(batch.map((h) async {
-          try {
-            final popular = await api.getHeroPopularItems(h.id);
-            double best = 0;
-            for (final stageItems in popular.values) {
-              for (final p in stageItems) {
-                if (p.itemId == widget.itemId && p.pickPct > best) {
-                  best = p.pickPct;
+        final results = await Future.wait(
+          batch.map((h) async {
+            try {
+              final popular = await api.getHeroPopularItems(h.id);
+              double best = 0;
+              for (final stageItems in popular.values) {
+                for (final p in stageItems) {
+                  if (p.itemId == widget.itemId && p.pickPct > best) {
+                    best = p.pickPct;
+                  }
                 }
               }
+              if (best <= 0) return null;
+              final name = h.name.trim();
+              return _HeroBuyStat(
+                heroId: h.id,
+                heroName: name.isEmpty ? 'Герой #${h.id}' : name,
+                pickPct: best,
+              );
+            } catch (_) {
+              return null;
             }
-            if (best <= 0) return null;
-            final name = (h.name ?? '').toString().trim();
-            return _HeroBuyStat(
-              heroId: h.id,
-              heroName: name.isEmpty ? 'Герой #${h.id}' : name,
-              pickPct: best,
-            );
-          } catch (_) {
-            return null;
-          }
-        }));
+          }),
+        );
         for (final r in results) {
           if (r == null) continue;
           final prev = byHero[r.heroId];

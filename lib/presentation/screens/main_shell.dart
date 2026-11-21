@@ -1,12 +1,13 @@
 ﻿import 'package:flutter/material.dart';
 
 import '../../core/theme/app_theme.dart';
+import '../../features/heroes/screens/main_screen.dart';
 import '../../features/items/screens/items_screen.dart';
 import 'counter_matrix_screen.dart';
 import 'leaderboard_screen.dart';
-import 'meta_screen.dart';
 import 'player_screen.dart';
 
+/// Единая оболочка приложения: все разделы в одном нижнем меню.
 class MainShell extends StatefulWidget {
   const MainShell({super.key});
 
@@ -15,38 +16,47 @@ class MainShell extends StatefulWidget {
 }
 
 class _MainShellState extends State<MainShell> {
+  final PageController _pageController = PageController();
   int _index = 0;
 
-  /// Вкладки создаются лениво: при старте грузится только мета.
-  final Set<int> _visited = {0};
-
   static const List<Widget> _tabs = [
-    MetaScreen(),
+    MainScreen(),
     PlayerScreen(),
     LeaderboardScreen(),
     CounterMatrixScreen(),
     ItemsScreen(),
   ];
 
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
   void _select(int index) {
     if (index == _index) {
       return;
     }
-    setState(() {
-      _index = index;
-      _visited.add(index);
-    });
+    setState(() => _index = index);
+    _pageController.animateToPage(
+      index,
+      duration: const Duration(milliseconds: 280),
+      curve: Curves.easeInOutCubic,
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(
-        index: _index,
-        children: [
-          for (var index = 0; index < _tabs.length; index++)
-            _visited.contains(index) ? _tabs[index] : const SizedBox.shrink(),
-        ],
+      body: PageView(
+        controller: _pageController,
+        physics: const NeverScrollableScrollPhysics(),
+        onPageChanged: (index) {
+          if (index != _index) {
+            setState(() => _index = index);
+          }
+        },
+        children: _tabs,
       ),
       bottomNavigationBar: Container(
         decoration: const BoxDecoration(
@@ -59,13 +69,21 @@ class _MainShellState extends State<MainShell> {
           backgroundColor: AppColors.surface,
           selectedItemColor: AppColors.gold,
           unselectedItemColor: AppColors.muted,
-          selectedFontSize: 10.5,
-          unselectedFontSize: 10,
+          selectedFontSize: 11,
+          unselectedFontSize: 11,
+          selectedLabelStyle: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w800,
+          ),
+          unselectedLabelStyle: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+          ),
           elevation: 0,
           items: const [
             BottomNavigationBarItem(
-              icon: Icon(Icons.insights_rounded),
-              label: 'Мета',
+              icon: Icon(Icons.people_alt_rounded),
+              label: 'Герои',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.person_search_rounded),

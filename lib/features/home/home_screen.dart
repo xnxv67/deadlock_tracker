@@ -28,10 +28,7 @@ class HomeScreen extends StatelessWidget {
             const SizedBox(height: 16),
             Text('Deadlock Tracker', style: theme.textTheme.headlineSmall),
             const SizedBox(height: 8),
-            Text(
-              'Лабораторная работа №1',
-              style: theme.textTheme.bodyMedium,
-            ),
+            Text('Лабораторная работа №1', style: theme.textTheme.bodyMedium),
           ],
         ),
       ),

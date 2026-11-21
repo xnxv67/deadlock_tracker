@@ -17,9 +17,12 @@ class ItemsRepositoryImpl implements ItemsRepository {
   @override
   Future<List<ItemMeta>> getItems() {
     return _guard(() async {
-      final stats = await _api.getItemStats();
-      final assets = await _catalog.items();
-      final heroStats = await _api.getHeroStats();
+      final statsFuture = _api.getItemStats();
+      final assetsFuture = _catalog.items();
+      final heroStatsFuture = _api.getHeroStats();
+      final stats = await statsFuture;
+      final assets = await assetsFuture;
+      final heroStats = await heroStatsFuture;
 
       var totalPicks = 0;
       for (final hero in heroStats) {

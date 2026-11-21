@@ -46,5 +46,12 @@ class PlayerState extends Equatable {
   }
 
   @override
-  List<Object?> get props => [status, accountId, profile, error, steamResults, steamSearching];
+  List<Object?> get props => [
+    status,
+    accountId,
+    profile,
+    error,
+    steamResults,
+    steamSearching,
+  ];
 }

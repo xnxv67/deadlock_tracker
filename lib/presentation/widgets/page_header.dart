@@ -54,32 +54,66 @@ class PageHeader extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Row(
-                children: [
-                  Container(
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final accent = Container(
                     width: 28,
                     height: 3,
                     decoration: BoxDecoration(
                       color: AppColors.copper,
                       borderRadius: BorderRadius.circular(2),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      eyebrow.toUpperCase(),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: AppColors.gold,
-                        fontSize: 9.5,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 3,
-                      ),
+                  );
+                  final label = Text(
+                    eyebrow.toUpperCase(),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: AppColors.gold,
+                      fontSize: 9.5,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 3,
                     ),
-                  ),
-                  ?trailing,
-                ],
+                  );
+
+                  if (trailing == null) {
+                    return Row(
+                      children: [
+                        accent,
+                        const SizedBox(width: 8),
+                        Expanded(child: label),
+                      ],
+                    );
+                  }
+
+                  if (constraints.maxWidth < 520) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Row(
+                          children: [
+                            accent,
+                            const SizedBox(width: 8),
+                            Expanded(child: label),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        trailing!,
+                      ],
+                    );
+                  }
+
+                  return Row(
+                    children: [
+                      accent,
+                      const SizedBox(width: 8),
+                      Expanded(child: label),
+                      const SizedBox(width: 8),
+                      trailing!,
+                    ],
+                  );
+                },
               ),
               const SizedBox(height: 9),
               Text(

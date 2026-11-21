@@ -15,7 +15,6 @@ import '../widgets/error_view.dart';
 import '../widgets/hero_avatar.dart';
 import '../widgets/section_header.dart';
 import '../widgets/shimmer_skeleton.dart';
-import '../widgets/simple_table.dart';
 import '../widgets/surface_card.dart';
 import 'hero_screen.dart';
 
@@ -130,8 +129,9 @@ class _MetaViewState extends State<_MetaView> {
                           ),
                           const SizedBox(height: 20),
                           SectionHeader(
-                            title: 'Мета героев',
-                            subtitle: 'Винрейт и пикрейт · клик по заголовку — сортировка',
+                            title: 'Тирлист меты',
+                            subtitle:
+                                'Тиры по винрейту · сортировка внутри тира',
                             trailing:
                                 state.status == MetaStatus.loading &&
                                     state.hasData
@@ -188,88 +188,411 @@ class _MetaViewState extends State<_MetaView> {
       );
     }
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final wide = constraints.maxWidth >= 680;
-        final columns = [
-          TableColumn(
-            'Герой',
-            flex: wide ? 6 : 7,
-            onTap: () => _sort(MetaSortField.name),
-            sorted: state.sortField == MetaSortField.name,
-            ascending: state.ascending,
-          ),
-          TableColumn(
-            'Tier',
-            flex: 1,
-            align: Alignment.center,
-          ),
-          if (wide)
-            TableColumn(
-              'Матчей',
-              flex: 2,
-              align: Alignment.centerRight,
-              onTap: () => _sort(MetaSortField.matches),
-              sorted: state.sortField == MetaSortField.matches,
-              ascending: state.ascending,
-            ),
-          TableColumn(
-            'Win%',
-            flex: 2,
-            align: Alignment.centerRight,
-            onTap: () => _sort(MetaSortField.winRate),
-            sorted: state.sortField == MetaSortField.winRate,
-            ascending: state.ascending,
-          ),
-          if (wide)
-            TableColumn(
-              'Pick Rate',
-              flex: 2,
-              align: Alignment.centerRight,
-              onTap: () => _sort(MetaSortField.pickRate),
-              sorted: state.sortField == MetaSortField.pickRate,
-              ascending: state.ascending,
-            ),
-        ];
+    final groups = <String, List<HeroMeta>>{};
+    for (final meta in heroes) {
+      groups.putIfAbsent(meta.tier, () => <HeroMeta>[]).add(meta);
+    }
+    final tiers = const ['S', 'A', 'B', 'C']
+        .where((tier) => groups[tier]?.isNotEmpty ?? false)
+        .toList(growable: false);
 
-        final rows = <TableRowData>[
-          for (final meta in heroes)
-            TableRowData(
-              onTap: () => _openHero(meta),
-              cells: [
-                _HeroCell(meta: meta),
-                _TierBadge(tier: meta.tier),
-                if (wide)
-                  Text(
-                    formatCount(meta.matches),
-                    style: const TextStyle(
-                      fontSize: 12.5,
-                      color: AppColors.muted,
-                    ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _SortBar(
+          selected: state.sortField,
+          ascending: state.ascending,
+          onSelected: _sort,
+        ),
+        const SizedBox(height: 18),
+        for (final tier in tiers)
+          _TierSection(tier: tier, heroes: groups[tier]!, onOpen: _openHero),
+      ],
+    );
+  }
+}
+
+class _SortBar extends StatelessWidget {
+  const _SortBar({
+    required this.selected,
+    required this.ascending,
+    required this.onSelected,
+  });
+
+  final MetaSortField selected;
+  final bool ascending;
+  final ValueChanged<MetaSortField> onSelected;
+
+  static const Map<MetaSortField, String> _labels = {
+    MetaSortField.winRate: 'Винрейт',
+    MetaSortField.pickRate: 'Пикрейт',
+    MetaSortField.matches: 'Матчи',
+    MetaSortField.name: 'Имя',
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          for (final field in MetaSortField.values)
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: ChoiceChip(
+                label: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(_labels[field] ?? field.name),
+                    if (field == selected) ...[
+                      const SizedBox(width: 4),
+                      Icon(
+                        ascending
+                            ? Icons.arrow_upward_rounded
+                            : Icons.arrow_downward_rounded,
+                        size: 13,
+                      ),
+                    ],
+                  ],
+                ),
+                selected: field == selected,
+                visualDensity: VisualDensity.compact,
+                showCheckmark: false,
+                onSelected: (_) => onSelected(field),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TierSection extends StatelessWidget {
+  const _TierSection({
+    required this.tier,
+    required this.heroes,
+    required this.onOpen,
+  });
+
+  final String tier;
+  final List<HeroMeta> heroes;
+  final void Function(HeroMeta) onOpen;
+
+  static const List<String> _tierOrder = ['S', 'A', 'B', 'C'];
+  static const List<String> _descriptions = [
+    'Винрейт выше 54%',
+    'Винрейт выше 52%',
+    'Винрейт выше 50%',
+    'Винрейт 50% и ниже',
+  ];
+
+  Color get _color {
+    return switch (tier) {
+      'S' => const Color(0xFFFF4D4D),
+      'A' => const Color(0xFFFFA940),
+      'B' => const Color(0xFF4DA6FF),
+      _ => AppColors.muted,
+    };
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final index = _tierOrder.indexOf(tier);
+    final color = _color;
+    final description = index >= 0 && index < _descriptions.length
+        ? _descriptions[index]
+        : 'Группа меты';
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 22),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      color.withValues(alpha: 0.32),
+                      color.withValues(alpha: 0.08),
+                    ],
                   ),
-                Text(
-                  formatPercent(meta.winRate),
+                  border: Border.all(color: color.withValues(alpha: 0.65)),
+                ),
+                child: Text(
+                  tier,
                   style: TextStyle(
-                    fontSize: 13.5,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.winRateColor(meta.winRate),
+                    color: color,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w900,
                   ),
                 ),
-                if (wide)
-                  Text(
-                    formatPercent(meta.pickRate),
-                    style: const TextStyle(
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.gold,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'TIER $tier',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 1.4,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      description,
+                      style: const TextStyle(
+                        color: AppColors.muted,
+                        fontSize: 10.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: Text(
+                  '${heroes.length}',
+                  style: const TextStyle(
+                    color: AppColors.muted,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              const spacing = 10.0;
+              final width = constraints.maxWidth;
+              final columns = width >= 980
+                  ? 5
+                  : width >= 760
+                  ? 4
+                  : width >= 560
+                  ? 3
+                  : width >= 370
+                  ? 2
+                  : 1;
+              final cardWidth = (width - spacing * (columns - 1)) / columns;
+              return Wrap(
+                spacing: spacing,
+                runSpacing: spacing,
+                children: [
+                  for (final meta in heroes)
+                    SizedBox(
+                      width: cardWidth,
+                      child: _HeroCard(
+                        meta: meta,
+                        color: color,
+                        onOpen: () => onOpen(meta),
+                      ),
+                    ),
+                ],
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HeroCard extends StatelessWidget {
+  const _HeroCard({
+    required this.meta,
+    required this.color,
+    required this.onOpen,
+  });
+
+  final HeroMeta meta;
+  final Color color;
+  final VoidCallback onOpen;
+
+  @override
+  Widget build(BuildContext context) {
+    final winRate = meta.winRate;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onOpen,
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(10, 10, 10, 9),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            color: AppColors.surface,
+            border: Border.all(color: color.withValues(alpha: 0.28)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  HeroAvatar(hero: meta.hero, size: 38),
+                  const SizedBox(width: 9),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          meta.hero.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          meta.hero.role,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: AppColors.muted,
+                            fontSize: 10,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
+                  const SizedBox(width: 6),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        formatPercent(winRate),
+                        style: TextStyle(
+                          color: AppColors.winRateColor(winRate),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      Text(
+                        'WIN',
+                        style: TextStyle(
+                          color: color.withValues(alpha: 0.8),
+                          fontSize: 8.5,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 1,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Expanded(
+                    child: _Metric(
+                      label: 'PICK',
+                      value: formatPercent(meta.pickRate),
+                    ),
+                  ),
+                  Expanded(
+                    child: _Metric(
+                      label: 'MATCHES',
+                      value: formatCount(meta.matches),
+                    ),
+                  ),
+                  if (meta.winRateRank > 0)
+                    Expanded(
+                      child: _Metric(
+                        label: 'RANK',
+                        value: '#${meta.winRateRank}',
+                      ),
+                    ),
+                ],
+              ),
+              if (meta.winRateDelta.abs() >= 0.0005) ...[
+                const SizedBox(height: 7),
+                Row(
+                  children: [
+                    Icon(
+                      meta.winRateDelta > 0
+                          ? Icons.trending_up_rounded
+                          : Icons.trending_down_rounded,
+                      size: 12,
+                      color: meta.winRateDelta > 0
+                          ? AppColors.win
+                          : AppColors.lose,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${meta.winRateDelta > 0 ? '+' : ''}${formatPercent(meta.winRateDelta, digits: 2)} к среднему',
+                      style: TextStyle(
+                        color: meta.winRateDelta > 0
+                            ? AppColors.win
+                            : AppColors.lose,
+                        fontSize: 9.5,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
               ],
-            ),
-        ];
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
 
-        return SimpleTable(columns: columns, rows: rows);
-      },
+class _Metric extends StatelessWidget {
+  const _Metric({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            color: AppColors.muted,
+            fontSize: 8.5,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 0.8,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          value,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(
+            color: AppColors.text,
+            fontSize: 11.5,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ],
     );
   }
 }
@@ -364,7 +687,7 @@ class _HeaderBanner extends StatelessWidget {
               ),
               const SizedBox(height: 10),
               const Text(
-                'TRACKER',
+                'TIER LIST',
                 style: TextStyle(
                   fontSize: 32,
                   fontWeight: FontWeight.w900,
@@ -374,7 +697,7 @@ class _HeaderBanner extends StatelessWidget {
               ),
               const SizedBox(height: 7),
               const Text(
-                'Мета героев · винрейты · контр-пики',
+                'Мета героев · тиры по винрейту · пикрейт',
                 style: TextStyle(color: AppColors.muted, fontSize: 12),
               ),
             ],
@@ -531,95 +854,6 @@ class _SearchBar extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-class _HeroCell extends StatelessWidget {
-  const _HeroCell({required this.meta});
-
-  final HeroMeta meta;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        HeroAvatar(hero: meta.hero, size: 34),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                meta.hero.name,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 13.5,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              if (meta.hero.role.isNotEmpty) ...[
-                const SizedBox(height: 2),
-                Text(
-                  meta.hero.role,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: AppColors.muted,
-                    fontSize: 10.5,
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-
-class _TierBadge extends StatelessWidget {
-  const _TierBadge({required this.tier});
-
-  final String tier;
-
-  Color get _color {
-    switch (tier) {
-      case 'S':
-        return const Color(0xFFFF4D4D);
-      case 'A':
-        return const Color(0xFFFFA940);
-      case 'B':
-        return const Color(0xFF4DA6FF);
-      default:
-        return AppColors.muted;
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Container(
-        width: 24,
-        height: 24,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: _color.withValues(alpha: 0.16),
-          borderRadius: BorderRadius.circular(6),
-          border: Border.all(color: _color.withValues(alpha: 0.55)),
-        ),
-        child: Text(
-          tier,
-          style: TextStyle(
-            color: _color,
-            fontSize: 12,
-            fontWeight: FontWeight.w900,
-          ),
-        ),
-      ),
     );
   }
 }

@@ -41,12 +41,5 @@ class Hero extends Equatable {
   }
 
   @override
-  List<Object?> get props => [
-    id,
-    name,
-    role,
-    imageUrl,
-    cardUrl,
-    backgroundUrl,
-  ];
+  List<Object?> get props => [id, name, role, imageUrl, cardUrl, backgroundUrl];
 }

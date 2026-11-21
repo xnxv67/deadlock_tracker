@@ -32,11 +32,7 @@ void main() {
 
   runApp(
     DeadlockApp(
-      heroRepository: HeroRepositoryImpl(
-        api,
-        catalog,
-        apiClient: apiClient,
-      ),
+      heroRepository: HeroRepositoryImpl(api, catalog, apiClient: apiClient),
       playerRepository: PlayerRepositoryImpl(api, catalog),
       itemsRepository: ItemsRepositoryImpl(api, catalog),
       leaderboardRepository: LeaderboardRepositoryImpl(api, catalog),

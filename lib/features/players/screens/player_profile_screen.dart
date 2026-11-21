@@ -6,20 +6,26 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/error_messages.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../domain/entities/match_record.dart';
+import '../../../domain/entities/player_analysis.dart';
 import '../../../domain/entities/player_badge.dart';
-import '../../../domain/entities/player_hero_stat.dart';
 import '../../../domain/entities/player_profile.dart';
 import '../../../domain/repositories/player_repository.dart';
 import '../../../presentation/widgets/error_view.dart';
-import '../../../presentation/widgets/hero_avatar.dart';
 import '../../../presentation/widgets/rank_badge_chip.dart';
 import '../../../presentation/widgets/remote_image.dart';
 import '../../../presentation/widgets/shimmer_skeleton.dart';
-import '../../../presentation/widgets/simple_table.dart';
 import '../../../presentation/widgets/surface_card.dart';
+import '../player_insights.dart';
+import '../widgets/analysis_tab.dart';
+import '../widgets/awards_tab.dart';
+import '../widgets/heroes_tab.dart';
+import '../widgets/laning_tab.dart';
+import '../widgets/matches_tab.dart';
+import '../widgets/overview_tab.dart';
+import '../widgets/performance_tab.dart';
+import '../widgets/profile_tab_bar.dart';
 import 'match_detail_screen.dart';
 
-/// Профиль игрока: винрейт, KDA, ранг и любимые герои.
 class PlayerProfileScreen extends StatefulWidget {
   const PlayerProfileScreen({
     super.key,
@@ -39,9 +45,24 @@ class PlayerProfileScreen extends StatefulWidget {
 }
 
 class _PlayerProfileScreenState extends State<PlayerProfileScreen> {
+  static const List<ProfileTabItem> _tabs = [
+    ProfileTabItem(icon: Icons.dashboard_rounded, label: 'Обзор'),
+    ProfileTabItem(icon: Icons.shield_rounded, label: 'Герои'),
+    ProfileTabItem(icon: Icons.alt_route_rounded, label: 'Линии'),
+    ProfileTabItem(icon: Icons.insights_rounded, label: 'Статистика'),
+    ProfileTabItem(icon: Icons.query_stats_rounded, label: 'Анализ'),
+    ProfileTabItem(icon: Icons.emoji_events_rounded, label: 'Награды'),
+    ProfileTabItem(icon: Icons.history_rounded, label: 'Матчи'),
+  ];
+
   PlayerProfile? _profile;
+  PlayerInsights? _insights;
+  PlayerAnalysis? _analysis;
   AppErrorType? _error;
+  AppErrorType? _analysisError;
   bool _loading = true;
+  bool _analysisLoading = false;
+  int _tab = 0;
 
   @override
   void initState() {
@@ -55,14 +76,19 @@ class _PlayerProfileScreenState extends State<PlayerProfileScreen> {
       _error = null;
     });
     try {
-      final profile = await context
-          .read<PlayerRepository>()
-          .getProfile(widget.accountId);
+      final profile = await context.read<PlayerRepository>().getProfile(
+        widget.accountId,
+      );
       if (!mounted) return;
       setState(() {
         _profile = profile;
+        _insights = PlayerInsights(profile);
+        _analysis = null;
         _loading = false;
       });
+      if (_tab == 2 || _tab == 4) {
+        _ensureAnalysis(force: true);
+      }
     } on AppException catch (error) {
       if (!mounted) return;
       setState(() {
@@ -80,6 +106,10 @@ class _PlayerProfileScreenState extends State<PlayerProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final insights = _insights;
+    final badge = _profile?.badge ?? widget.badge;
+    final bannerUrl = insights?.mostPlayedHero?.hero.bannerUrl ?? '';
+
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -87,46 +117,276 @@ class _PlayerProfileScreenState extends State<PlayerProfileScreen> {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
+        actions: [
+          IconButton(
+            tooltip: 'Обновить',
+            onPressed: _loading ? null : _load,
+            icon: _loading
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.refresh_rounded, size: 19),
+          ),
+          const SizedBox(width: 4),
+        ],
       ),
       body: RefreshIndicator(
         onRefresh: _load,
         child: ListView(
           physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.fromLTRB(14, 14, 14, 28),
+          padding: const EdgeInsets.fromLTRB(12, 8, 12, 30),
           children: [
-            _header(),
-            const SizedBox(height: 14),
-            if (_loading)
-              const SkeletonTable(rows: 5, showAvatar: true, trailingBlocks: 2)
-            else if (_error != null)
-              ErrorView(
-                title: errorTitle(_error),
-                text: errorText(_error),
-                onRetry: _load,
-              )
-            else if (_profile == null || _profile!.isEmpty)
-              const SurfaceCard(
-                child: Padding(
-                  padding: EdgeInsets.symmetric(vertical: 24),
-                  child: Text(
-                    'Нет статистики по этому игроку',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: AppColors.muted, fontSize: 12),
-                  ),
+            Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 1200),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _ProfileHeader(
+                      personaName: widget.personaName,
+                      accountId: widget.accountId,
+                      avatarUrl: widget.avatarUrl,
+                      badge: badge,
+                      bannerUrl: bannerUrl,
+                      insights: insights,
+                    ),
+                    const SizedBox(height: 12),
+                    ProfileTabBar(
+                      items: _tabs,
+                      selectedIndex: _tab,
+                      onSelected: _selectTab,
+                    ),
+                    const SizedBox(height: 12),
+                    _body(insights),
+                  ],
                 ),
-              )
-            else
-              _content(_profile!),
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _header() {
-    final badge = _profile?.badge ?? widget.badge;
+  Widget _body(PlayerInsights? insights) {
+    if (_loading) {
+      return _loadingBody();
+    }
+    if (_error != null) {
+      return ErrorView(
+        title: errorTitle(_error),
+        text: errorText(_error),
+        onRetry: _load,
+      );
+    }
+    if (_profile == null || _profile!.isEmpty || insights == null) {
+      return const SurfaceCard(
+        child: Padding(
+          padding: EdgeInsets.symmetric(vertical: 26),
+          child: Column(
+            children: [
+              Icon(Icons.person_off_rounded, size: 32, color: AppColors.copper),
+              SizedBox(height: 10),
+              Text(
+                'Нет статистики по этому игроку',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: AppColors.muted, fontSize: 12),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final Widget content;
+    switch (_tab) {
+      case 1:
+        content = ProfileHeroesTab(insights: insights);
+        break;
+      case 2:
+        content = _analysisBody(
+          insights,
+          (analysis) => ProfileLaningTab(analysis: analysis),
+        );
+        break;
+      case 3:
+        content = ProfilePerformanceTab(
+          insights: insights,
+          onOpenMatch: _openMatch,
+        );
+        break;
+      case 4:
+        content = _analysisBody(
+          insights,
+          (analysis) =>
+              ProfileAnalysisTab(analysis: analysis, insights: insights),
+        );
+        break;
+      case 5:
+        content = ProfileAwardsTab(insights: insights);
+        break;
+      case 6:
+        content = ProfileMatchesTab(
+          insights: insights,
+          onOpenMatch: _openMatch,
+        );
+        break;
+      default:
+        content = ProfileOverviewTab(
+          insights: insights,
+          badge: _profile!.badge ?? widget.badge,
+          onOpenMatch: _openMatch,
+          onOpenMatchesTab: () => _selectTab(6),
+        );
+    }
+
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 180),
+      switchInCurve: Curves.easeOut,
+      switchOutCurve: Curves.easeIn,
+      child: KeyedSubtree(key: ValueKey<int>(_tab), child: content),
+    );
+  }
+
+  Widget _analysisBody(
+    PlayerInsights insights,
+    Widget Function(PlayerAnalysis analysis) builder,
+  ) {
+    final analysis = _analysis;
+    if (_analysisLoading && analysis == null) {
+      return const SurfaceCard(
+        child: Padding(
+          padding: EdgeInsets.symmetric(vertical: 36),
+          child: Column(
+            children: [
+              SizedBox(
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(strokeWidth: 2.4),
+              ),
+              SizedBox(height: 12),
+              Text(
+                'Загружаем аналитику Deadlock API…',
+                style: TextStyle(color: AppColors.muted, fontSize: 11),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    if (_analysisError != null && analysis == null) {
+      return ErrorView(
+        title: errorTitle(_analysisError),
+        text: errorText(_analysisError),
+        onRetry: () => _ensureAnalysis(force: true),
+      );
+    }
+    if (analysis == null) {
+      return const SizedBox.shrink();
+    }
+    return builder(analysis);
+  }
+
+  void _selectTab(int index) {
+    if (_tab == index) {
+      return;
+    }
+    setState(() => _tab = index);
+    if (index == 2 || index == 4) {
+      _ensureAnalysis();
+    }
+  }
+
+  Future<void> _ensureAnalysis({bool force = false}) async {
+    if (_analysisLoading) {
+      return;
+    }
+    if (!force && _analysis != null) {
+      return;
+    }
+    setState(() {
+      _analysisLoading = true;
+      _analysisError = null;
+    });
+    try {
+      final analysis = await context.read<PlayerRepository>().getAnalysis(
+        widget.accountId,
+      );
+      if (!mounted) return;
+      setState(() {
+        _analysis = analysis;
+        _analysisLoading = false;
+      });
+    } on AppException catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _analysisError = error.type;
+        _analysisLoading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _analysisError = AppErrorType.unknown;
+        _analysisLoading = false;
+      });
+    }
+  }
+
+  Widget _loadingBody() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final count = constraints.maxWidth < 520 ? 2 : 4;
+        final width = (constraints.maxWidth - (count - 1) * 10) / count;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: [
+                for (var index = 0; index < 4; index++)
+                  SkeletonStatTile(width: width),
+              ],
+            ),
+            const SizedBox(height: 16),
+            const SkeletonTable(rows: 6, showAvatar: true, trailingBlocks: 3),
+          ],
+        );
+      },
+    );
+  }
+
+  void _openMatch(MatchRecord match) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => MatchDetailScreen(match: match)),
+    );
+  }
+}
+
+class _ProfileHeader extends StatelessWidget {
+  const _ProfileHeader({
+    required this.personaName,
+    required this.accountId,
+    required this.avatarUrl,
+    required this.badge,
+    required this.bannerUrl,
+    required this.insights,
+  });
+
+  final String personaName;
+  final int accountId;
+  final String avatarUrl;
+  final PlayerBadge? badge;
+  final String bannerUrl;
+  final PlayerInsights? insights;
+
+  @override
+  Widget build(BuildContext context) {
+    final name = personaName.isEmpty ? 'Игрок #$accountId' : personaName;
+
     return Container(
-      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: AppColors.copper.withValues(alpha: 0.32)),
@@ -136,481 +396,269 @@ class _PlayerProfileScreenState extends State<PlayerProfileScreen> {
           colors: [Color(0xFF2B0F16), Color(0xFF171214), Color(0xFF1D1613)],
         ),
       ),
-      child: Row(
+      clipBehavior: Clip.antiAlias,
+      child: Stack(
         children: [
-          Container(
-            width: 58,
-            height: 58,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: AppColors.border),
+          if (bannerUrl.isNotEmpty)
+            Positioned(
+              right: -30,
+              top: -50,
+              bottom: -50,
+              width: 360,
+              child: Opacity(
+                opacity: 0.28,
+                child: RemoteImage(
+                  url: bannerUrl,
+                  useProxy: true,
+                  proxyWidth: 640,
+                  fit: BoxFit.cover,
+                ),
+              ),
             ),
-            clipBehavior: Clip.antiAlias,
-            child: RemoteImage(
-              url: widget.avatarUrl,
-              fallback: const DeadlockImageFallback(),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  widget.personaName.isEmpty
-                      ? 'Игрок #${widget.accountId}'
-                      : widget.personaName,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 0.3,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'account_id ${widget.accountId}',
-                  style: const TextStyle(
-                    color: AppColors.muted,
-                    fontSize: 10.5,
-                    letterSpacing: 0.3,
-                  ),
-                ),
-                const SizedBox(height: 7),
-                RankBadgeChip(badge: badge, compact: true),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _content(PlayerProfile profile) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        LayoutBuilder(
-          builder: (context, constraints) {
-            final wide = constraints.maxWidth >= 620;
-            final tileWidth = wide
-                ? (constraints.maxWidth - 30) / 4
-                : (constraints.maxWidth - 10) / 2;
-            return Wrap(
-              spacing: 10,
-              runSpacing: 10,
-              children: [
-                SizedBox(
-                  width: tileWidth,
-                  child: _StatBlock(
-                    label: 'Винрейт',
-                    value: formatPercent(profile.winRate),
-                    accent: AppColors.winRateColor(profile.winRate),
-                    footnote: '${formatCount(profile.totalWins)} побед',
-                  ),
-                ),
-                SizedBox(
-                  width: tileWidth,
-                  child: _StatBlock(
-                    label: 'Матчи',
-                    value: formatCount(profile.totalMatches),
-                    accent: AppColors.text,
-                  ),
-                ),
-                SizedBox(
-                  width: tileWidth,
-                  child: _StatBlock(
-                    label: 'KDA',
-                    value: profile.kda.toStringAsFixed(2),
-                    accent: AppColors.gold,
-                    footnote:
-                        '${formatCount(profile.totalKills)} / '
-                        '${formatCount(profile.totalDeaths)} / '
-                        '${formatCount(profile.totalAssists)}',
-                  ),
-                ),
-                SizedBox(
-                  width: tileWidth,
-                  child: _StatBlock(
-                    label: 'Ранг',
-                    value: profile.badge?.label ?? '—',
-                    accent: AppColors.copper,
-                    footnote: profile.badge == null
-                        ? 'ранг не определён'
-                        : '${profile.badge!.tierName} · '
-                            '${profile.badge!.subrank}',
-                  ),
-                ),
-              ],
-            );
-          },
-        ),
-        const SizedBox(height: 18),
-        _SectionTitle(
-          title: 'Любимые герои',
-          subtitle: 'Топ по числу матчей',
-          trailing: Text(
-            '${profile.heroes.length}',
-            style: const TextStyle(
-              color: AppColors.muted,
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ),
-        const SizedBox(height: 8),
-        if (profile.heroes.isEmpty)
-          const SurfaceCard(
-            child: Text(
-              'Нет данных по героям',
-              style: TextStyle(color: AppColors.muted, fontSize: 12),
-            ),
-          )
-        else
-          SimpleTable(
-            columns: const [
-              TableColumn('Герой', flex: 5),
-              TableColumn('Матчи', flex: 2, align: Alignment.centerRight),
-              TableColumn('Win%', flex: 2, align: Alignment.centerRight),
-              TableColumn('KDA', flex: 2, align: Alignment.centerRight),
-            ],
-            rows: [
-              for (final stat in profile.heroes.take(8))
-                TableRowData(
-                  cells: [
-                    _HeroCell(stat: stat),
-                    Text(
-                      formatCount(stat.matches),
-                      style: const TextStyle(
-                        color: AppColors.muted,
-                        fontSize: 11.5,
-                      ),
-                    ),
-                    Text(
-                      formatPercent(stat.winRate),
-                      style: TextStyle(
-                        color: AppColors.winRateColor(stat.winRate),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    Text(
-                      formatKdaRatio(stat.kills, stat.deaths, stat.assists),
-                      style: const TextStyle(
-                        color: AppColors.gold,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                  colors: [
+                    const Color(0xFF1B1214),
+                    const Color(0xFF1B1214).withValues(alpha: 0.55),
+                    Colors.transparent,
                   ],
                 ),
-            ],
-          ),
-        if (profile.heroes.length > 8) ...[
-          const SizedBox(height: 8),
-          Text(
-            'Показано 8 из ${profile.heroes.length} героев',
-            textAlign: TextAlign.center,
-            style: const TextStyle(color: AppColors.muted, fontSize: 9.5),
-          ),
-        ],
-        const SizedBox(height: 20),
-        _SectionTitle(
-          title: 'История матчей',
-          subtitle: 'Последние ${profile.matches.length} игр',
-          trailing: Text(
-            '${profile.matches.length}',
-            style: const TextStyle(
-              color: AppColors.muted,
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
+              ),
             ),
           ),
-        ),
-        const SizedBox(height: 8),
-        if (profile.matches.isEmpty)
-          const SurfaceCard(
-            child: Text(
-              'Нет истории матчей',
-              style: TextStyle(color: AppColors.muted, fontSize: 12),
-            ),
-          )
-        else
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              for (var index = 0; index < profile.matches.length; index++) ...[
-                if (index > 0) const SizedBox(height: 8),
-                _MatchCard(
-                  match: profile.matches[index],
-                  onTap: () => _openMatch(profile.matches[index]),
-                ),
-              ],
-            ],
-          ),
-      ],
-    );
-  }
-
-  void _openMatch(MatchRecord match) {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => MatchDetailScreen(match: match),
-      ),
-    );
-  }
-}
-
-class _MatchCard extends StatelessWidget {
-  const _MatchCard({required this.match, required this.onTap});
-
-  final MatchRecord match;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = match.isWin ? AppColors.win : AppColors.lose;
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(14),
-        child: Ink(
-          padding: const EdgeInsets.fromLTRB(11, 9, 8, 9),
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.09),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: color.withValues(alpha: 0.38)),
-          ),
-          child: Row(
-            children: [
-              HeroAvatar(hero: match.hero, size: 40),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final wide = constraints.maxWidth >= 560;
+                return Row(
                   children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            match.hero.name,
+                    _Avatar(avatarUrl: avatarUrl),
+                    const SizedBox(width: 13),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            name,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 7,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: color.withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(6),
-                            border: Border.all(
-                              color: color.withValues(alpha: 0.6),
-                            ),
-                          ),
-                          child: Text(
-                            match.isWin ? 'ПОБЕДА' : 'ПОРАЖЕНИЕ',
-                            style: TextStyle(
-                              color: color,
-                              fontSize: 8.5,
+                              fontSize: 23,
                               fontWeight: FontWeight.w900,
-                              letterSpacing: 0.5,
+                              letterSpacing: 0.4,
+                              height: 1.05,
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '${formatDateFromSeconds(match.startTime)} · '
-                      '${formatDuration(match.durationSeconds)}',
-                      style: const TextStyle(
-                        color: AppColors.muted,
-                        fontSize: 9.5,
+                          const SizedBox(height: 5),
+                          Row(
+                            children: [
+                              Text(
+                                'account_id $accountId',
+                                style: const TextStyle(
+                                  color: AppColors.muted,
+                                  fontSize: 10,
+                                  letterSpacing: 0.3,
+                                ),
+                              ),
+                              if (insights != null) ...[
+                                const SizedBox(width: 8),
+                                Container(
+                                  width: 3,
+                                  height: 3,
+                                  decoration: const BoxDecoration(
+                                    color: AppColors.muted,
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Flexible(
+                                  child: Text(
+                                    '${formatCount(insights!.totalMatches)} матчей',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      color: AppColors.muted,
+                                      fontSize: 10,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                          const SizedBox(height: 9),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 6,
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            children: [
+                              RankBadgeChip(badge: badge, compact: true),
+                              if (insights != null)
+                                _HeaderMetric(
+                                  label: 'Winrate',
+                                  value: formatPercent(insights!.winRate),
+                                  color: AppColors.winRateColor(
+                                    insights!.winRate,
+                                  ),
+                                ),
+                              if (insights != null)
+                                _HeaderMetric(
+                                  label: 'KDA',
+                                  value: insights!.kda.toStringAsFixed(2),
+                                  color: AppColors.gold,
+                                ),
+                            ],
+                          ),
+                        ],
                       ),
                     ),
+                    if (wide && insights != null)
+                      _HeaderScore(insights: insights!),
                   ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    match.kda.toStringAsFixed(2),
-                    style: const TextStyle(
-                      color: AppColors.gold,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w900,
-                      height: 1.1,
-                    ),
-                  ),
-                  Text(
-                    '${match.kills}/${match.deaths}/${match.assists}',
-                    style: const TextStyle(
-                      color: AppColors.muted,
-                      fontSize: 9,
-                    ),
-                  ),
-                ],
-              ),
-              const Icon(
-                Icons.chevron_right_rounded,
-                size: 18,
-                color: AppColors.muted,
-              ),
-            ],
+                );
+              },
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
 }
 
-class _HeroCell extends StatelessWidget {
-  const _HeroCell({required this.stat});
+class _Avatar extends StatelessWidget {
+  const _Avatar({required this.avatarUrl});
 
-  final PlayerHeroStat stat;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        HeroAvatar(hero: stat.hero, size: 26),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(
-            stat.hero.name,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _StatBlock extends StatelessWidget {
-  const _StatBlock({
-    required this.label,
-    required this.value,
-    required this.accent,
-    this.footnote,
-  });
-
-  final String label;
-  final String value;
-  final Color accent;
-  final String? footnote;
+  final String avatarUrl;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(12, 10, 12, 11),
+      width: 68,
+      height: 68,
       decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.border),
+        borderRadius: BorderRadius.circular(15),
+        border: Border.all(color: AppColors.copper.withValues(alpha: 0.55)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.35),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      clipBehavior: Clip.antiAlias,
+      child: RemoteImage(
+        url: avatarUrl,
+        fallback: const DeadlockImageFallback(),
+      ),
+    );
+  }
+}
+
+class _HeaderMetric extends StatelessWidget {
+  const _HeaderMetric({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  final String label;
+  final String value;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+      decoration: BoxDecoration(
+        color: AppColors.background.withValues(alpha: 0.45),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: AppColors.border.withValues(alpha: 0.7)),
+      ),
+      child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
             label.toUpperCase(),
             style: const TextStyle(
               color: AppColors.muted,
-              fontSize: 8.5,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.9,
+              fontSize: 7.5,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.5,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(width: 4),
           Text(
             value,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              color: accent,
-              fontSize: 18,
+              color: color,
+              fontSize: 10.5,
               fontWeight: FontWeight.w900,
-              height: 1.05,
             ),
           ),
-          if (footnote != null) ...[
-            const SizedBox(height: 3),
-            Text(
-              footnote!,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: AppColors.muted,
-                fontSize: 9,
-                height: 1.15,
-              ),
-            ),
-          ],
         ],
       ),
     );
   }
 }
 
-class _SectionTitle extends StatelessWidget {
-  const _SectionTitle({
-    required this.title,
-    required this.subtitle,
-    this.trailing,
-  });
+class _HeaderScore extends StatelessWidget {
+  const _HeaderScore({required this.insights});
 
-  final String title;
-  final String subtitle;
-  final Widget? trailing;
+  final PlayerInsights insights;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                title.toUpperCase(),
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 1.3,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                subtitle,
-                style: const TextStyle(
-                  color: AppColors.muted,
-                  fontSize: 10,
-                ),
-              ),
-            ],
+    final score = insights.performanceScore.round();
+    final color = score >= 62
+        ? AppColors.win
+        : score >= 45
+        ? AppColors.gold
+        : AppColors.lose;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      decoration: BoxDecoration(
+        color: AppColors.background.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withValues(alpha: 0.4)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Text(
+            'ФОРМА',
+            style: TextStyle(
+              color: AppColors.muted,
+              fontSize: 8,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 1,
+            ),
           ),
-        ),
-        ?trailing,
-      ],
+          const SizedBox(height: 2),
+          Text(
+            '$score',
+            style: TextStyle(
+              color: color,
+              fontSize: 28,
+              fontWeight: FontWeight.w900,
+              height: 1,
+            ),
+          ),
+          Text(
+            insights.performanceLabel,
+            style: TextStyle(
+              color: color.withValues(alpha: 0.85),
+              fontSize: 8.5,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -16,8 +16,7 @@ List<ItemMeta> sortItems(
       ItemSortField.matches => first.matches.compareTo(second.matches),
       ItemSortField.pickRate => first.pickRate.compareTo(second.pickRate),
       ItemSortField.winRate => first.winRate.compareTo(second.winRate),
-      ItemSortField.buyTime =>
-        first.avgBuyTimeS.compareTo(second.avgBuyTimeS),
+      ItemSortField.buyTime => first.avgBuyTimeS.compareTo(second.avgBuyTimeS),
     };
     if (compare == 0) {
       compare = first.matches.compareTo(second.matches);

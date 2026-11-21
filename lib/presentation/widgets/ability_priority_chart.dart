@@ -82,7 +82,9 @@ class _AbilityPriorityChartState extends State<AbilityPriorityChart> {
           );
         }
 
-        final maxMatches = top.map((e) => e.matches).reduce((a, b) => a > b ? a : b);
+        final maxMatches = top
+            .map((e) => e.matches)
+            .reduce((a, b) => a > b ? a : b);
 
         return SizedBox(
           height: 320,
@@ -94,15 +96,22 @@ class _AbilityPriorityChartState extends State<AbilityPriorityChart> {
               gridData: const FlGridData(show: false),
               borderData: FlBorderData(show: false),
               titlesData: FlTitlesData(
-                topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                topTitles: const AxisTitles(
+                  sideTitles: SideTitles(showTitles: false),
+                ),
+                rightTitles: const AxisTitles(
+                  sideTitles: SideTitles(showTitles: false),
+                ),
                 leftTitles: AxisTitles(
                   sideTitles: SideTitles(
                     showTitles: true,
                     reservedSize: 40,
                     getTitlesWidget: (value, meta) => Text(
                       '${value.toInt()}%',
-                      style: const TextStyle(fontSize: 9, color: AppColors.muted),
+                      style: const TextStyle(
+                        fontSize: 9,
+                        color: AppColors.muted,
+                      ),
                     ),
                   ),
                 ),
@@ -112,13 +121,18 @@ class _AbilityPriorityChartState extends State<AbilityPriorityChart> {
                     reservedSize: 46,
                     getTitlesWidget: (value, meta) {
                       final i = value.toInt();
-                      if (i < 0 || i >= top.length) return const SizedBox.shrink();
+                      if (i < 0 || i >= top.length) {
+                        return const SizedBox.shrink();
+                      }
                       return Padding(
                         padding: const EdgeInsets.only(top: 6),
                         child: Text(
                           '#${i + 1}\n${(top[i].matches / maxMatches * 100).toStringAsFixed(0)}%',
                           textAlign: TextAlign.center,
-                          style: const TextStyle(fontSize: 8.5, color: AppColors.muted),
+                          style: const TextStyle(
+                            fontSize: 8.5,
+                            color: AppColors.muted,
+                          ),
                         ),
                       );
                     },
@@ -133,8 +147,12 @@ class _AbilityPriorityChartState extends State<AbilityPriorityChart> {
                       BarChartRodData(
                         toY: top[i].winRate * 100,
                         width: 18,
-                        color: top[i].winRate >= 0.5 ? AppColors.win : AppColors.lose,
-                        borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
+                        color: top[i].winRate >= 0.5
+                            ? AppColors.win
+                            : AppColors.lose,
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(4),
+                        ),
                       ),
                     ],
                   ),

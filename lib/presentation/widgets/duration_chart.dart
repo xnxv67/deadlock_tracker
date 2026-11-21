@@ -75,8 +75,10 @@ class _DurationChartState extends State<DurationChart> {
           return const SizedBox(
             height: 60,
             child: Center(
-              child: Text('Не удалось загрузить длительности',
-                  style: TextStyle(color: AppColors.muted, fontSize: 11)),
+              child: Text(
+                'Не удалось загрузить длительности',
+                style: TextStyle(color: AppColors.muted, fontSize: 11),
+              ),
             ),
           );
         }
@@ -92,11 +94,14 @@ class _DurationChartState extends State<DurationChart> {
               borderData: FlBorderData(show: false),
               titlesData: FlTitlesData(
                 topTitles: const AxisTitles(
-                    sideTitles: SideTitles(showTitles: false)),
+                  sideTitles: SideTitles(showTitles: false),
+                ),
                 rightTitles: const AxisTitles(
-                    sideTitles: SideTitles(showTitles: false)),
+                  sideTitles: SideTitles(showTitles: false),
+                ),
                 leftTitles: const AxisTitles(
-                    sideTitles: SideTitles(showTitles: false)),
+                  sideTitles: SideTitles(showTitles: false),
+                ),
                 bottomTitles: AxisTitles(
                   sideTitles: SideTitles(
                     showTitles: true,
@@ -108,9 +113,13 @@ class _DurationChartState extends State<DurationChart> {
                       }
                       return Padding(
                         padding: const EdgeInsets.only(top: 4),
-                        child: Text(_buckets[i].label,
-                            style: const TextStyle(
-                                fontSize: 10, color: AppColors.muted)),
+                        child: Text(
+                          _buckets[i].label,
+                          style: const TextStyle(
+                            fontSize: 10,
+                            color: AppColors.muted,
+                          ),
+                        ),
                       );
                     },
                   ),
@@ -124,9 +133,12 @@ class _DurationChartState extends State<DurationChart> {
                       BarChartRodData(
                         toY: values[i],
                         width: 22,
-                        color: values[i] >= 0.5 ? AppColors.win : AppColors.lose,
+                        color: values[i] >= 0.5
+                            ? AppColors.win
+                            : AppColors.lose,
                         borderRadius: const BorderRadius.vertical(
-                            top: Radius.circular(4)),
+                          top: Radius.circular(4),
+                        ),
                       ),
                     ],
                   ),

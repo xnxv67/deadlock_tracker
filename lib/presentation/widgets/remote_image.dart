@@ -72,8 +72,7 @@ class _RemoteImageState extends State<RemoteImage> {
       return [url];
     }
 
-    final path =
-        '${uri.host}${uri.path}${uri.hasQuery ? '?${uri.query}' : ''}';
+    final path = '${uri.host}${uri.path}${uri.hasQuery ? '?${uri.query}' : ''}';
     final encodedPath = Uri.encodeComponent(path);
     final encodedFull = Uri.encodeComponent(url);
 
@@ -112,6 +111,7 @@ class _RemoteImageState extends State<RemoteImage> {
     return Image.network(
       _sources[_index],
       fit: widget.fit,
+      filterQuality: FilterQuality.high,
       errorBuilder: (context, error, stackTrace) {
         _tryNextSource();
         return _fallback;
@@ -137,10 +137,12 @@ class DeadlockImageFallback extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final width =
-            constraints.maxWidth.isFinite ? constraints.maxWidth : 160.0;
-        final height =
-            constraints.maxHeight.isFinite ? constraints.maxHeight : width;
+        final width = constraints.maxWidth.isFinite
+            ? constraints.maxWidth
+            : 160.0;
+        final height = constraints.maxHeight.isFinite
+            ? constraints.maxHeight
+            : width;
         final side = math.min(width, height);
         final compact = side < 72;
 
@@ -149,11 +151,7 @@ class DeadlockImageFallback extends StatelessWidget {
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [
-                Color(0xFF2B0F16),
-                Color(0xFF171214),
-                Color(0xFF1D1613),
-              ],
+              colors: [Color(0xFF2B0F16), Color(0xFF171214), Color(0xFF1D1613)],
             ),
           ),
           child: Stack(

@@ -26,7 +26,6 @@ import '../widgets/surface_card.dart';
 class PlayerScreen extends StatelessWidget {
   const PlayerScreen({super.key});
 
-
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
@@ -126,8 +125,12 @@ class _PlayerViewState extends State<_PlayerView> {
                             _SteamResults(
                               results: state.steamResults,
                               onPick: (id) {
-                                context.read<PlayerBloc>().add(PlayerSteamResultsCleared());
-                                context.read<PlayerBloc>().add(PlayerSearchRequested(id));
+                                context.read<PlayerBloc>().add(
+                                  PlayerSteamResultsCleared(),
+                                );
+                                context.read<PlayerBloc>().add(
+                                  PlayerSearchRequested(id),
+                                );
                               },
                             ),
                           ],
@@ -722,7 +725,6 @@ class _EmptyCard extends StatelessWidget {
   }
 }
 
-
 class _SteamSearchRow extends StatelessWidget {
   const _SteamSearchRow({
     required this.controller,
@@ -801,35 +803,50 @@ class _SteamResults extends StatelessWidget {
   Widget build(BuildContext context) {
     return SurfaceCard(
       padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 6),
-      child: Column(
-        children: [
-          for (final r in results.take(10))
-            ListTile(
-              dense: true,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 8),
-              leading: CircleAvatar(
-                radius: 16,
-                backgroundColor: AppColors.surfaceLight,
-                backgroundImage:
-                    r.avatarMedium.isNotEmpty ? NetworkImage(r.avatarMedium) : null,
-                child: r.avatarMedium.isEmpty
-                    ? const Icon(Icons.person, size: 16, color: AppColors.muted)
-                    : null,
+      child: Material(
+        type: MaterialType.transparency,
+        child: Column(
+          children: [
+            for (final r in results.take(10))
+              ListTile(
+                dense: true,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+                leading: CircleAvatar(
+                  radius: 16,
+                  backgroundColor: AppColors.surfaceLight,
+                  backgroundImage: r.avatarMedium.isNotEmpty
+                      ? NetworkImage(r.avatarMedium)
+                      : null,
+                  child: r.avatarMedium.isEmpty
+                      ? const Icon(
+                          Icons.person,
+                          size: 16,
+                          color: AppColors.muted,
+                        )
+                      : null,
+                ),
+                title: Text(
+                  r.personaName.isEmpty ? 'Без имени' : r.personaName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                subtitle: Text(
+                  'account_id: ${r.accountId}${r.countryCode.isEmpty ? '' : ' · ${r.countryCode}'}',
+                  style: const TextStyle(fontSize: 11, color: AppColors.muted),
+                ),
+                trailing: const Icon(
+                  Icons.chevron_right,
+                  size: 18,
+                  color: AppColors.muted,
+                ),
+                onTap: () => onPick(r.accountId),
               ),
-              title: Text(
-                r.personaName.isEmpty ? 'Без имени' : r.personaName,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
-              ),
-              subtitle: Text(
-                'account_id: ${r.accountId}${r.countryCode.isEmpty ? '' : ' · ${r.countryCode}'}',
-                style: const TextStyle(fontSize: 11, color: AppColors.muted),
-              ),
-              trailing: const Icon(Icons.chevron_right, size: 18, color: AppColors.muted),
-              onTap: () => onPick(r.accountId),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }

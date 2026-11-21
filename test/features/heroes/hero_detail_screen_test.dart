@@ -168,16 +168,8 @@ const _stats = HeroDetailedStats(
 
 final _trend = HeroTrend(
   points: [
-    HeroTrendPoint(
-      date: DateTime(2026, 1, 1),
-      winRate: 0.52,
-      matches: 100,
-    ),
-    HeroTrendPoint(
-      date: DateTime(2026, 1, 2),
-      winRate: 0.54,
-      matches: 120,
-    ),
+    HeroTrendPoint(date: DateTime(2026, 1, 1), winRate: 0.52, matches: 100),
+    HeroTrendPoint(date: DateTime(2026, 1, 2), winRate: 0.54, matches: 120),
   ],
   weekDelta: 0.02,
 );
@@ -195,35 +187,17 @@ const _counters = [
     wins: 40,
   ),
   HeroCounter(
-    enemy: Hero(
-      id: 4,
-      name: 'Seven',
-      role: 'Carry',
-      imageUrl: '',
-      cardUrl: '',
-    ),
+    enemy: Hero(id: 4, name: 'Seven', role: 'Carry', imageUrl: '', cardUrl: ''),
     matches: 80,
     wins: 60,
   ),
   HeroCounter(
-    enemy: Hero(
-      id: 5,
-      name: 'Haze',
-      role: 'Carry',
-      imageUrl: '',
-      cardUrl: '',
-    ),
+    enemy: Hero(id: 5, name: 'Haze', role: 'Carry', imageUrl: '', cardUrl: ''),
     matches: 70,
     wins: 50,
   ),
   HeroCounter(
-    enemy: Hero(
-      id: 6,
-      name: 'Abrams',
-      role: 'Tank',
-      imageUrl: '',
-      cardUrl: '',
-    ),
+    enemy: Hero(id: 6, name: 'Abrams', role: 'Tank', imageUrl: '', cardUrl: ''),
     matches: 65,
     wins: 45,
   ),

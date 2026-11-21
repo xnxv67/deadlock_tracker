@@ -10,6 +10,7 @@ import '../../../presentation/bloc/items/items_bloc.dart';
 import '../../../presentation/bloc/items/items_event.dart';
 import '../../../presentation/bloc/items/items_state.dart';
 import '../../../presentation/widgets/item_icon.dart';
+import '../../../presentation/widgets/page_header.dart';
 import 'item_detail_screen.dart';
 
 class ItemsScreen extends StatelessWidget {
@@ -19,7 +20,8 @@ class ItemsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (context) =>
-          ItemsBloc(context.read<ItemsRepository>())..add(const ItemsRequested()),
+          ItemsBloc(context.read<ItemsRepository>())
+            ..add(const ItemsRequested()),
       child: const _ItemsView(),
     );
   }
@@ -63,25 +65,17 @@ class _ItemsViewState extends State<_ItemsView> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          const Text(
-                            'Каталог предметов',
-                            style: TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Предметы, стоимость и категории',
-                            style: TextStyle(
-                              color: AppColors.muted,
-                              fontSize: 13,
-                            ),
+                          const PageHeader(
+                            eyebrow: 'Каталог',
+                            title: 'ПРЕДМЕТЫ',
+                            subtitle: 'Предметы, стоимость и категории',
+                            watermark: 'IT',
                           ),
                           const SizedBox(height: 12),
                           TextField(
                             controller: _searchController,
-                            onChanged: (value) => setState(() => _query = value),
+                            onChanged: (value) =>
+                                setState(() => _query = value),
                             decoration: InputDecoration(
                               hintText: 'Поиск по названию...',
                               prefixIcon: const Icon(Icons.search_rounded),
@@ -98,11 +92,15 @@ class _ItemsViewState extends State<_ItemsView> {
                               fillColor: AppColors.surface,
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(14),
-                                borderSide: const BorderSide(color: AppColors.surfaceLight),
+                                borderSide: const BorderSide(
+                                  color: AppColors.surfaceLight,
+                                ),
                               ),
                               enabledBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(14),
-                                borderSide: const BorderSide(color: AppColors.surfaceLight),
+                                borderSide: const BorderSide(
+                                  color: AppColors.surfaceLight,
+                                ),
                               ),
                             ),
                           ),
@@ -147,7 +145,10 @@ class _ItemsViewState extends State<_ItemsView> {
                   children: [
                     Text(
                       errorTitle(state.error),
-                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     Text(
@@ -157,7 +158,8 @@ class _ItemsViewState extends State<_ItemsView> {
                     ),
                     const SizedBox(height: 12),
                     FilledButton(
-                      onPressed: () => context.read<ItemsBloc>().add(const ItemsRequested()),
+                      onPressed: () =>
+                          context.read<ItemsBloc>().add(const ItemsRequested()),
                       child: const Text('Повторить'),
                     ),
                   ],
@@ -167,7 +169,8 @@ class _ItemsViewState extends State<_ItemsView> {
           ),
         ];
       }
-      if (state.status == ItemsStatus.loading || state.status == ItemsStatus.initial) {
+      if (state.status == ItemsStatus.loading ||
+          state.status == ItemsStatus.initial) {
         return const [
           SliverFillRemaining(
             hasScrollBody: false,
@@ -201,22 +204,19 @@ class _ItemsViewState extends State<_ItemsView> {
             crossAxisSpacing: 12,
             childAspectRatio: 0.82,
           ),
-          delegate: SliverChildBuilderDelegate(
-            (context, index) {
-              final item = items[index];
-              return _ItemCard(
-                item: item,
-                onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                      builder: (_) => ItemDetailScreen(item: item),
-                    ),
-                  );
-                },
-              );
-            },
-            childCount: items.length,
-          ),
+          delegate: SliverChildBuilderDelegate((context, index) {
+            final item = items[index];
+            return _ItemCard(
+              item: item,
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => ItemDetailScreen(item: item),
+                  ),
+                );
+              },
+            );
+          }, childCount: items.length),
         ),
       ),
     ];
@@ -239,7 +239,9 @@ class _ItemCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final category = item.item.slotType.isNotEmpty ? item.item.slotType : 'Без категории';
+    final category = item.item.slotType.isNotEmpty
+        ? item.item.slotType
+        : 'Без категории';
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
@@ -264,7 +266,11 @@ class _ItemCard extends StatelessWidget {
             const SizedBox(height: 6),
             Row(
               children: [
-                const Icon(Icons.monetization_on_rounded, size: 16, color: AppColors.gold),
+                const Icon(
+                  Icons.monetization_on_rounded,
+                  size: 16,
+                  color: AppColors.gold,
+                ),
                 const SizedBox(width: 4),
                 Text(
                   item.item.cost > 0 ? formatCount(item.item.cost) : '—',

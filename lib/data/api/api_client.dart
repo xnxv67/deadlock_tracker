@@ -59,10 +59,7 @@ class ApiClient {
 
   Future<dynamic> _get(String path, {Map<String, dynamic>? query}) async {
     try {
-      final response = await _dio.get<dynamic>(
-        path,
-        queryParameters: query,
-      );
+      final response = await _dio.get<dynamic>(path, queryParameters: query);
       return response.data;
     } on DioException catch (error) {
       throw _mapError(error);
@@ -97,10 +94,7 @@ class ApiClient {
         }
         return AppException(AppErrorType.unknown, 'HTTP $code');
       case DioExceptionType.cancel:
-        return const AppException(
-          AppErrorType.unknown,
-          'Запрос был отменён',
-        );
+        return const AppException(AppErrorType.unknown, 'Запрос был отменён');
       case DioExceptionType.unknown:
         return const AppException(AppErrorType.network);
     }

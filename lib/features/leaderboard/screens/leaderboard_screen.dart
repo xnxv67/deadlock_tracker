@@ -33,8 +33,22 @@ class LeaderboardScreen extends StatelessWidget {
   }
 }
 
-class _LeaderboardView extends StatelessWidget {
+class _LeaderboardView extends StatefulWidget {
   const _LeaderboardView();
+
+  @override
+  State<_LeaderboardView> createState() => _LeaderboardViewState();
+}
+
+class _LeaderboardViewState extends State<_LeaderboardView> {
+  final TextEditingController _searchController = TextEditingController();
+  String _query = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -52,6 +66,11 @@ class _LeaderboardView extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(14, 12, 14, 26),
             children: [
               _RegionBar(selected: state.region),
+              const SizedBox(height: 10),
+              _SearchField(
+                controller: _searchController,
+                onChanged: (value) => setState(() => _query = value),
+              ),
               const SizedBox(height: 12),
               _content(context, state),
             ],
@@ -91,8 +110,33 @@ class _LeaderboardView extends StatelessWidget {
       );
     }
 
-    final top = state.players.take(3).toList(growable: false);
-    final rest = state.players.skip(3).toList(growable: false);
+    final query = _query.trim().toLowerCase();
+    final players = query.isEmpty
+        ? state.players
+        : state.players
+              .where(
+                (player) =>
+                    player.name.toLowerCase().contains(query) ||
+                    player.topHeroes.any(
+                      (hero) => hero.name.toLowerCase().contains(query),
+                    ),
+              )
+              .toList();
+    if (players.isEmpty) {
+      return SurfaceCard(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 26),
+          child: Text(
+            'Никого не найдено по запросу «$_query»',
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: AppColors.muted, fontSize: 12),
+          ),
+        ),
+      );
+    }
+
+    final top = players.take(3).toList(growable: false);
+    final rest = players.skip(3).toList(growable: false);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -153,7 +197,7 @@ class _LeaderboardView extends StatelessWidget {
         const SizedBox(height: 20),
         _SectionTitle(
           title: 'Топ-100',
-          subtitle: 'Показано ${state.players.length} игроков',
+          subtitle: 'Показано ${players.length} игроков',
         ),
         const SizedBox(height: 9),
         if (rest.isEmpty)
@@ -173,11 +217,7 @@ class _LeaderboardView extends StatelessWidget {
               TableColumn('#', flex: 2),
               TableColumn('Игрок', flex: 5),
               TableColumn('Ранг', flex: 3),
-              TableColumn(
-                'Победы',
-                flex: 2,
-                align: Alignment.centerRight,
-              ),
+              TableColumn('Победы', flex: 2, align: Alignment.centerRight),
             ],
             rows: [
               for (final player in rest)
@@ -210,15 +250,10 @@ class _LeaderboardView extends StatelessWidget {
                     ),
                     Align(
                       alignment: Alignment.centerLeft,
-                      child: RankBadgeChip(
-                        badge: player.badge,
-                        compact: true,
-                      ),
+                      child: RankBadgeChip(badge: player.badge, compact: true),
                     ),
                     Text(
-                      player.wins == null
-                          ? '—'
-                          : formatCount(player.wins!),
+                      player.wins == null ? '—' : formatCount(player.wins!),
                       style: TextStyle(
                         color: player.wins == null
                             ? AppColors.muted
@@ -274,11 +309,7 @@ class _RegionBar extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(
-            Icons.public_rounded,
-            size: 16,
-            color: AppColors.copper,
-          ),
+          const Icon(Icons.public_rounded, size: 16, color: AppColors.copper),
           const SizedBox(width: 8),
           const Text(
             'РЕГИОН',
@@ -375,10 +406,7 @@ class _SectionTitle extends StatelessWidget {
               const SizedBox(height: 2),
               Text(
                 subtitle,
-                style: const TextStyle(
-                  color: AppColors.muted,
-                  fontSize: 10.5,
-                ),
+                style: const TextStyle(color: AppColors.muted, fontSize: 10.5),
               ),
             ],
           ),
@@ -513,6 +541,45 @@ class _MiniHeroes extends StatelessWidget {
             const SizedBox(width: 3),
           ],
         ],
+      ),
+    );
+  }
+}
+
+class _SearchField extends StatelessWidget {
+  const _SearchField({required this.controller, required this.onChanged});
+
+  final TextEditingController controller;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return TextField(
+      controller: controller,
+      onChanged: onChanged,
+      decoration: InputDecoration(
+        hintText: 'Поиск по нику или герою...',
+        isDense: true,
+        prefixIcon: const Icon(
+          Icons.search_rounded,
+          size: 20,
+          color: AppColors.muted,
+        ),
+        suffixIcon: ValueListenableBuilder<TextEditingValue>(
+          valueListenable: controller,
+          builder: (context, value, child) {
+            if (value.text.isEmpty) {
+              return const SizedBox.shrink();
+            }
+            return IconButton(
+              icon: const Icon(Icons.clear_rounded, size: 18),
+              onPressed: () {
+                controller.clear();
+                onChanged('');
+              },
+            );
+          },
+        ),
       ),
     );
   }

@@ -470,7 +470,8 @@ class _CounterSection extends StatelessWidget {
       children: [
         SectionHeader(
           title: 'Худшие матчапы',
-          subtitle: 'Против кого $heroName играет хуже всего · мин. $_minSamples матчей',
+          subtitle:
+              'Против кого $heroName играет хуже всего · мин. $_minSamples матчей',
           trailing: Text(
             '${worst.length.clamp(0, 10)}',
             style: const TextStyle(
@@ -550,7 +551,8 @@ class _SynergySection extends StatelessWidget {
       children: [
         const SectionHeader(
           title: 'Лучшие синергии',
-          subtitle: 'Союзники с максимальным винрейтом · мин. $_minSamples матчей',
+          subtitle:
+              'Союзники с максимальным винрейтом · мин. $_minSamples матчей',
         ),
         const SizedBox(height: 10),
         if (shown.isEmpty)
@@ -924,9 +926,7 @@ class _BuildsSortToggle extends StatelessWidget {
                 child: Text(
                   sort.label,
                   style: TextStyle(
-                    color: sort == current
-                        ? AppColors.gold
-                        : AppColors.muted,
+                    color: sort == current ? AppColors.gold : AppColors.muted,
                     fontSize: 10.5,
                     fontWeight: FontWeight.w700,
                   ),
@@ -1314,8 +1314,7 @@ class _DetailedStats extends StatelessWidget {
         final wide = constraints.maxWidth >= 620;
         final perRow = wide ? 4 : 2;
         const spacing = 8.0;
-        final width =
-            (constraints.maxWidth - spacing * (perRow - 1)) / perRow;
+        final width = (constraints.maxWidth - spacing * (perRow - 1)) / perRow;
         return Wrap(
           spacing: spacing,
           runSpacing: spacing,
@@ -1642,7 +1641,6 @@ class _ApiNote extends StatelessWidget {
   }
 }
 
-
 class _AbilitiesTab extends StatelessWidget {
   const _AbilitiesTab({required this.heroId});
 
@@ -1661,7 +1659,8 @@ class _AbilitiesTab extends StatelessWidget {
               children: [
                 const SectionHeader(
                   title: 'Путь прокачки',
-                  subtitle: 'Топ-путь по винрейту · порядок и среднее время открытия',
+                  subtitle:
+                      'Топ-путь по винрейту · порядок и среднее время открытия',
                 ),
                 const SizedBox(height: 12),
                 const _AbilityPathCard(),
@@ -1764,8 +1763,7 @@ class _AbilityPathCard extends StatelessWidget {
                 spacing: 8,
                 runSpacing: 10,
                 children: [
-                  for (final step in path.steps)
-                    _AbilityStepChip(step: step),
+                  for (final step in path.steps) _AbilityStepChip(step: step),
                 ],
               ),
             ],

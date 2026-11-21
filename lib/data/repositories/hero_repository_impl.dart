@@ -26,11 +26,8 @@ import '../dto/item_asset_dto.dart';
 import '../repositories/asset_catalog.dart';
 
 class HeroRepositoryImpl implements HeroRepository {
-  HeroRepositoryImpl(
-    this._api,
-    this._catalog, {
-    ApiClient? apiClient,
-  }) : _apiClient = apiClient ?? ApiClient();
+  HeroRepositoryImpl(this._api, this._catalog, {ApiClient? apiClient})
+    : _apiClient = apiClient ?? ApiClient();
 
   static const List<_DurationBucket> _durationBuckets = [
     _DurationBucket('до 20 мин', 0, 1200),
@@ -93,8 +90,10 @@ class HeroRepositoryImpl implements HeroRepository {
   @override
   Future<List<HeroMeta>> getMeta() {
     return _guard(() async {
-      final heroes = await _catalog.heroes();
-      final stats = await _loadStats();
+      final heroesFuture = _catalog.heroes();
+      final statsFuture = _loadStats();
+      final heroes = await heroesFuture;
+      final stats = await statsFuture;
 
       final heroesById = {
         for (final hero in heroes)
@@ -387,6 +386,9 @@ class HeroRepositoryImpl implements HeroRepository {
                 if (buyTimes[item.id] != null) item.id: buyTimes[item.id]!,
             },
             categories: categories,
+            players: stat.players,
+            avgBadge: stat.avgBadge,
+            authorAccountId: detail?.authorAccountId ?? 0,
           ),
         );
       }
@@ -496,9 +498,7 @@ class HeroRepositoryImpl implements HeroRepository {
 
       raw.sort((a, b) => a.timestamp.compareTo(b.timestamp));
       // Берём последние 14 дней, чтобы график был читаемым.
-      final recent = raw.length > 14
-          ? raw.sublist(raw.length - 14)
-          : raw;
+      final recent = raw.length > 14 ? raw.sublist(raw.length - 14) : raw;
 
       final points = <HeroTrendPoint>[
         for (final point in recent)
@@ -514,15 +514,11 @@ class HeroRepositoryImpl implements HeroRepository {
       double weekDelta = 0;
       if (recent.length >= 4) {
         final half = recent.length ~/ 2;
-        final oldAvg = recent
-                .take(half)
-                .map((p) => p.winRate)
-                .reduce((a, b) => a + b) /
+        final oldAvg =
+            recent.take(half).map((p) => p.winRate).reduce((a, b) => a + b) /
             half;
-        final newAvg = recent
-                .skip(half)
-                .map((p) => p.winRate)
-                .reduce((a, b) => a + b) /
+        final newAvg =
+            recent.skip(half).map((p) => p.winRate).reduce((a, b) => a + b) /
             (recent.length - half);
         weekDelta = newAvg - oldAvg;
       }
@@ -579,7 +575,9 @@ class HeroRepositoryImpl implements HeroRepository {
         // 504/429 — повторяем; прочие ошибки пробрасываем сразу.
         final code = error.response?.statusCode;
         if (code == 504 || code == 429) {
-          await Future<void>.delayed(Duration(milliseconds: 400 * (attempt + 1)));
+          await Future<void>.delayed(
+            Duration(milliseconds: 400 * (attempt + 1)),
+          );
           continue;
         }
         rethrow;

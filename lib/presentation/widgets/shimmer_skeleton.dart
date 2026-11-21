@@ -139,8 +139,7 @@ class SkeletonTable extends StatelessWidget {
       child: Column(
         children: [
           for (var i = 0; i < rows; i++) ...[
-            if (i > 0)
-              const Divider(height: 1, color: AppColors.surfaceLight),
+            if (i > 0) const Divider(height: 1, color: AppColors.surfaceLight),
             SkeletonTableRow(
               showAvatar: showAvatar,
               trailingBlocks: trailingBlocks,
@@ -204,11 +203,7 @@ class SkeletonBanner extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          ShimmerBox(
-            width: height - 40,
-            height: height - 40,
-            borderRadius: 16,
-          ),
+          ShimmerBox(width: height - 40, height: height - 40, borderRadius: 16),
           const SizedBox(width: 16),
           const Expanded(
             child: Column(
@@ -246,45 +241,42 @@ class ScreenSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListView(
-      physics: const NeverScrollableScrollPhysics(),
+    return Padding(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
-      children: [
-        Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 1180),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                if (showBanner) ...[
-                  const SkeletonBanner(),
-                  const SizedBox(height: 18),
-                ],
-                if (statTiles > 0) ...[
-                  LayoutBuilder(
-                    builder: (context, constraints) {
-                      final wide = constraints.maxWidth >= 560;
-                      final width = wide
-                          ? (constraints.maxWidth - 20) / statTiles
-                          : (constraints.maxWidth - 10) / 2;
-                      return Wrap(
-                        spacing: 10,
-                        runSpacing: 10,
-                        children: [
-                          for (var i = 0; i < statTiles; i++)
-                            SkeletonStatTile(width: width),
-                        ],
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 20),
-                ],
-                SkeletonTable(rows: tableRows, showAvatar: showAvatar),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1180),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (showBanner) ...[
+                const SkeletonBanner(),
+                const SizedBox(height: 18),
               ],
-            ),
+              if (statTiles > 0) ...[
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final wide = constraints.maxWidth >= 560;
+                    final width = wide
+                        ? (constraints.maxWidth - 20) / statTiles
+                        : (constraints.maxWidth - 10) / 2;
+                    return Wrap(
+                      spacing: 10,
+                      runSpacing: 10,
+                      children: [
+                        for (var i = 0; i < statTiles; i++)
+                          SkeletonStatTile(width: width),
+                      ],
+                    );
+                  },
+                ),
+                const SizedBox(height: 20),
+              ],
+              SkeletonTable(rows: tableRows, showAvatar: showAvatar),
+            ],
           ),
         ),
-      ],
+      ),
     );
   }
 }

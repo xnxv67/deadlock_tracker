@@ -33,7 +33,10 @@ class AbilityOrderDto {
   /// Считается на уровне списка (см. AbilityOrderStats), здесь — сырой вес.
   factory AbilityOrderDto.fromJson(Map<String, dynamic> json) {
     final rawAbilities = jsonList(json['abilities']);
-    final abilities = rawAbilities.map((e) => jsonInt(e)).where((id) => id > 0).toList();
+    final abilities = rawAbilities
+        .map((e) => jsonInt(e))
+        .where((id) => id > 0)
+        .toList();
 
     final rawTimes = jsonList(json['avg_upgrade_times_s']);
     final times = rawTimes.map((e) => jsonDouble(e)).toList();

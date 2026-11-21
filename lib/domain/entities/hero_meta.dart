@@ -44,10 +44,14 @@ class HeroMeta extends Equatable {
 
   int get tierRank {
     switch (tier) {
-      case 'S': return 0;
-      case 'A': return 1;
-      case 'B': return 2;
-      default: return 3;
+      case 'S':
+        return 0;
+      case 'A':
+        return 1;
+      case 'B':
+        return 2;
+      default:
+        return 3;
     }
   }
 

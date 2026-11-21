@@ -208,9 +208,7 @@ class _PlayerSearchScreenState extends State<PlayerSearchScreen> {
     if (_results.isEmpty) {
       return ListView(
         padding: const EdgeInsets.fromLTRB(14, 10, 14, 24),
-        children: const [
-          _EmptyCard(text: 'Игроки с таким ником не найдены'),
-        ],
+        children: const [_EmptyCard(text: 'Игроки с таким ником не найдены')],
       );
     }
 

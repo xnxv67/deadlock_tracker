@@ -21,12 +21,13 @@ class LeaderboardRepositoryImpl implements LeaderboardRepository {
     LeaderboardRegion region = LeaderboardRegion.europe,
   }) {
     return _guard(() async {
-      final entries =
-          (await _api.getLeaderboard(region: region.apiValue))
-              .take(_limit)
-              .toList();
-      final heroMap = await _catalog.heroMap();
-      final rankTiers = await _catalog.rankTiers();
+      final entries = (await _api.getLeaderboard(region: region.apiValue))
+          .take(_limit)
+          .toList();
+      final heroMapFuture = _catalog.heroMap();
+      final rankTiersFuture = _catalog.rankTiers();
+      final heroMap = await heroMapFuture;
+      final rankTiers = await rankTiersFuture;
 
       final singleIds = <int>[];
       for (final entry in entries) {

@@ -65,8 +65,7 @@ class HeroStatsDto {
   double get avgNetWorth => matches == 0 ? 0 : totalNetWorth / matches;
   double get avgLastHits => matches == 0 ? 0 : totalLastHits / matches;
   double get avgDenies => matches == 0 ? 0 : totalDenies / matches;
-  double get avgPlayerDamage =>
-      matches == 0 ? 0 : totalPlayerDamage / matches;
+  double get avgPlayerDamage => matches == 0 ? 0 : totalPlayerDamage / matches;
   double get avgPlayerDamageTaken =>
       matches == 0 ? 0 : totalPlayerDamageTaken / matches;
 

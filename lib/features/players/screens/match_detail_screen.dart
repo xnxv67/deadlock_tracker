@@ -122,10 +122,7 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
                     SizedBox(height: 2),
                     Text(
                       'В порядке покупки',
-                      style: TextStyle(
-                        color: AppColors.muted,
-                        fontSize: 10,
-                      ),
+                      style: TextStyle(color: AppColors.muted, fontSize: 10),
                     ),
                   ],
                 ),
@@ -199,11 +196,7 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
         const SizedBox(height: 8),
         const Text(
           'Демонстрационные предметы и тайминги: API не отдаёт инвентарь матча.',
-          style: TextStyle(
-            color: AppColors.muted,
-            fontSize: 8.5,
-            height: 1.3,
-          ),
+          style: TextStyle(color: AppColors.muted, fontSize: 8.5, height: 1.3),
         ),
       ],
     );
@@ -263,6 +256,30 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
                 color: AppColors.win,
               ),
             ),
+            SizedBox(
+              width: width,
+              child: _FactTile(
+                label: 'Ластхиты',
+                icon: Icons.agriculture_rounded,
+                value: match.lastHits == null
+                    ? 'Н/Д'
+                    : formatCount(match.lastHits!),
+                hint: match.lastHits == null ? 'нет данных' : 'добито крипов',
+                color: AppColors.gold,
+              ),
+            ),
+            SizedBox(
+              width: width,
+              child: _FactTile(
+                label: 'Денай',
+                icon: Icons.block_rounded,
+                value: match.denies == null
+                    ? 'Н/Д'
+                    : formatCount(match.denies!),
+                hint: match.denies == null ? 'нет данных' : 'отказано крипов',
+                color: AppColors.muted,
+              ),
+            ),
           ],
         );
       },
@@ -300,10 +317,7 @@ class _ResultBanner extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            color.withValues(alpha: 0.22),
-            AppColors.surface,
-          ],
+          colors: [color.withValues(alpha: 0.22), AppColors.surface],
         ),
       ),
       child: Row(
@@ -501,11 +515,7 @@ class _KdaDivider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 1,
-      height: 30,
-      color: AppColors.surfaceLight,
-    );
+    return Container(width: 1, height: 30, color: AppColors.surfaceLight);
   }
 }
 

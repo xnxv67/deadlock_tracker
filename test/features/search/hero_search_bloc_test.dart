@@ -40,10 +40,7 @@ void main() {
 
     final state = await success.future.timeout(const Duration(seconds: 2));
     expect(repository.queries, ['ab']);
-    expect(statuses, [
-      HeroSearchStatus.loading,
-      HeroSearchStatus.success,
-    ]);
+    expect(statuses, [HeroSearchStatus.loading, HeroSearchStatus.success]);
     expect(state.heroes.single, _abrams);
   });
 

@@ -18,10 +18,7 @@ class AbilityAssetDto {
     return AbilityAssetDto(
       id: jsonInt(json['id']),
       name: jsonString(json['name']),
-      imageUrl: jsonString(
-        json['image'],
-        jsonString(json['image_webp']),
-      ),
+      imageUrl: jsonString(json['image'], jsonString(json['image_webp'])),
       heroId: jsonInt(json['hero']),
     );
   }

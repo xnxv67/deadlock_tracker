@@ -18,6 +18,9 @@ class MatchRecord extends Equatable {
     this.netWorth,
     this.lastHits,
     this.denies,
+    this.heroLevel = 0,
+    this.rankedBadge,
+    this.rankedDelta,
   });
 
   final int matchId;
@@ -39,6 +42,15 @@ class MatchRecord extends Equatable {
   final int? netWorth;
   final int? lastHits;
   final int? denies;
+
+  /// Уровень героя к концу матча.
+  final int heroLevel;
+
+  /// Ранговый бейдж после матча и изменение прогресса ранга.
+  final int? rankedBadge;
+  final int? rankedDelta;
+
+  bool get isRanked => rankedBadge != null;
 
   double get kda {
     if (deaths <= 0) {
@@ -62,5 +74,8 @@ class MatchRecord extends Equatable {
     netWorth,
     lastHits,
     denies,
+    heroLevel,
+    rankedBadge,
+    rankedDelta,
   ];
 }

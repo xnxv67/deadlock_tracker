@@ -18,10 +18,7 @@ class HeroTrendPoint extends Equatable {
 
 /// Тренд винрейта героя: точки по дням + дельта за последнюю неделю.
 class HeroTrend extends Equatable {
-  const HeroTrend({
-    required this.points,
-    required this.weekDelta,
-  });
+  const HeroTrend({required this.points, required this.weekDelta});
 
   final List<HeroTrendPoint> points;
 

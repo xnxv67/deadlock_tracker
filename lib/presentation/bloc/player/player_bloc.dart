@@ -59,7 +59,10 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
     }
   }
 
-  void _onSteamCleared(PlayerSteamResultsCleared event, Emitter<PlayerState> emit) {
+  void _onSteamCleared(
+    PlayerSteamResultsCleared event,
+    Emitter<PlayerState> emit,
+  ) {
     emit(state.copyWith(steamResults: const [], steamSearching: false));
   }
 

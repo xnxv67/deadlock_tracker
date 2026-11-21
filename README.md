@@ -1,17 +1,53 @@
-# deadlock_tracker
+# Deadlock Tracker
 
-A new Flutter project.
+Клиент статистики и мета-аналитики игры Deadlock на Flutter. Данные берутся из публичного API [`api.deadlock-api.com`](https://api.deadlock-api.com).
 
-## Getting Started
+## Что умеет
 
-This project is a starting point for a Flutter application.
+- **Герои** — тир-лист S/A/B/C, поиск, фильтр по ролям, сортировка по имени, винрейту и пикрейту.
+- **Избранное** — герои сохраняются локально через `shared_preferences`.
+- **Профиль героя** — статистика, билды, контры, синергии, динамика пиков и приоритет способностей.
+- **Игроки** — поиск профиля, ранг, статистика по героям и история матчей.
+- **Лидерборд** — таблица игроков с поиском и пагинацией.
+- **Тирлист** — герои разбиты на тиры S/A/B/C по винрейту; внутри тира — сортировка по винрейту, пикрейту, матчам и имени, поиск и метрики на карточках.
+- **Контрпики** — матрица matchup'ов.
+- **Предметы** — каталог с фильтрами и карточками предметов.
+- Секретный экран **Labs** открывается 10 кликами по KDA у Inferno.
 
-A few resources to get you started if this is your first Flutter project:
+## Запуск
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+Требуется Flutter SDK 3.47+ (Dart 3.13+).
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+```bash
+flutter pub get
+flutter run          # или: flutter run -d chrome
+```
+
+Веб-сборка:
+
+```bash
+flutter build web
+```
+
+## Проверки
+
+```bash
+flutter test
+flutter analyze
+dart format lib test
+```
+
+## Структура
+
+```text
+lib/
+├── core/          # тема, кэш API, константы, утилиты, хранилище избранного
+├── data/          # DTO, DataSource, реализации репозиториев, каталог ассетов
+├── domain/        # сущности и интерфейсы репозиториев
+├── features/      # экраны и BLoC'и по фичам (герои, игроки, лидерборд, предметы, поиск)
+├── presentation/  # общие экраны, BLoC'и и переиспользуемые виджеты
+├── app.dart       # дерево провайдеров и MaterialApp
+└── main.dart      # Dio, кэш, сборка репозиториев
+```
+
+Состояние экранов управляется через `flutter_bloc`, запросы — через Dio с таймаутами и in-memory кэшем. Изображения героев и предметов подгружаются через прокси из каталога ассетов API.

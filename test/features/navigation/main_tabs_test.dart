@@ -7,8 +7,8 @@ import 'package:deadlock_tracker/domain/entities/steam_profile.dart';
 import 'package:deadlock_tracker/domain/repositories/hero_repository.dart';
 import 'package:deadlock_tracker/domain/repositories/leaderboard_repository.dart';
 import 'package:deadlock_tracker/domain/repositories/player_repository.dart';
-import 'package:deadlock_tracker/features/heroes/screens/main_screen.dart';
 import 'package:deadlock_tracker/l10n/app_localizations.dart';
+import 'package:deadlock_tracker/presentation/screens/main_shell.dart';
 import 'package:flutter/material.dart' hide Hero;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -29,13 +29,7 @@ const _heroMeta = [
     pickRate: 0.12,
   ),
   HeroMeta(
-    hero: Hero(
-      id: 6,
-      name: 'Abrams',
-      role: 'Tank',
-      imageUrl: '',
-      cardUrl: '',
-    ),
+    hero: Hero(id: 6, name: 'Abrams', role: 'Tank', imageUrl: '', cardUrl: ''),
     matches: 100,
     wins: 45,
     pickRate: 0.09,
@@ -49,7 +43,9 @@ void main() {
     SharedPreferences.setMockInitialValues({});
   });
 
-  testWidgets('вкладки лидеров и поиска открываются без ошибок', (tester) async {
+  testWidgets('единая навигация открывает все разделы без ошибок', (
+    tester,
+  ) async {
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
@@ -58,27 +54,33 @@ void main() {
     await tester.pumpWidget(_testApp());
     await tester.pumpAndSettle();
 
-    expect(find.text('Infernus'), findsOneWidget);
-    expect(find.text('Abrams'), findsOneWidget);
+    expect(find.text('Infernus'), findsWidgets);
+    expect(find.text('Abrams'), findsWidgets);
 
     await tester.tap(find.text('Tank').first);
     await tester.pumpAndSettle();
-    expect(find.text('Abrams'), findsOneWidget);
+    expect(find.text('Abrams'), findsWidgets);
     expect(find.text('Infernus'), findsNothing);
 
     await tester.tap(find.text('Все'));
     await tester.pumpAndSettle();
-    expect(find.text('Infernus'), findsOneWidget);
+    expect(find.text('Infernus'), findsWidgets);
 
     await tester.enterText(find.byType(TextField).first, 'Infer');
     await tester.pumpAndSettle();
-    expect(find.text('Infernus'), findsOneWidget);
+    expect(find.text('Infernus'), findsWidgets);
     expect(find.text('Abrams'), findsNothing);
+
+    await tester.tap(find.byTooltip('Только избранное'));
+    await tester.pumpAndSettle();
+    expect(find.text('Пока нет избранных героев'), findsOneWidget);
+    await tester.tap(find.byTooltip('Показать всех героев'));
+    await tester.pumpAndSettle();
 
     await tester.tap(find.byIcon(Icons.emoji_events_rounded));
     await tester.pumpAndSettle();
-    expect(find.text('Alpha'), findsOneWidget);
-    expect(find.textContaining('42'), findsOneWidget);
+    expect(find.text('Alpha'), findsWidgets);
+    expect(find.text('Пьедестал'), findsOneWidget);
 
     await tester.tap(find.byIcon(Icons.person_search_rounded));
     await tester.pumpAndSettle();
@@ -92,7 +94,9 @@ Widget _testApp() {
   return MultiRepositoryProvider(
     providers: [
       RepositoryProvider<HeroRepository>.value(value: _FakeHeroRepository()),
-      RepositoryProvider<PlayerRepository>.value(value: _FakePlayerRepository()),
+      RepositoryProvider<PlayerRepository>.value(
+        value: _FakePlayerRepository(),
+      ),
       RepositoryProvider<LeaderboardRepository>.value(
         value: _FakeLeaderboardRepository(),
       ),
@@ -105,7 +109,8 @@ Widget _testApp() {
         GlobalCupertinoLocalizations.delegate,
       ],
       supportedLocales: AppLocalizations.supportedLocales,
-      home: const MainScreen(),
+      locale: const Locale('ru'),
+      home: const MainShell(),
     ),
   );
 }

@@ -46,7 +46,12 @@ Future<List<Player>> loadPlayers() async {
   return <Player>[
     Player(name: 'shroud', hero: 'Haze', kda: 6.4),
     Player(name: 'mikaelS', hero: 'Abrams', kda: 4.1, role: HeroRole.tank),
-    Player(name: 'average_jon', hero: 'Dynamo', kda: 5.2, role: HeroRole.support),
+    Player(
+      name: 'average_jon',
+      hero: 'Dynamo',
+      kda: 5.2,
+      role: HeroRole.support,
+    ),
     Player(name: 'lumi', hero: 'Infernus', kda: 3.8),
   ];
 }

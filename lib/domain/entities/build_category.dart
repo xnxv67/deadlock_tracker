@@ -16,7 +16,8 @@ class BuildCategory extends Equatable {
   /// Комментарий автора к предмету (по itemId).
   final Map<int, String> annotations;
 
-  bool get isCore => name.toLowerCase().contains('early') ||
+  bool get isCore =>
+      name.toLowerCase().contains('early') ||
       name.toLowerCase().contains('mid') ||
       name.toLowerCase().contains('late');
 

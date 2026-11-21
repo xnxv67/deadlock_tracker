@@ -13,6 +13,9 @@ class HeroBuild extends Equatable {
     required this.wins,
     this.buyTimes = const {},
     this.categories = const [],
+    this.players = 0,
+    this.avgBadge = 0,
+    this.authorAccountId = 0,
   });
 
   final int buildId;
@@ -27,6 +30,13 @@ class HeroBuild extends Equatable {
   /// Категории предметов с аннотациями автора (если есть).
   final List<BuildCategory> categories;
 
+  /// Игроки и средний ранг, собранные статистикой сборки.
+  final int players;
+  final double avgBadge;
+
+  /// Steam-аккаунт автора сборки, если API его вернул.
+  final int authorAccountId;
+
   double get winRate => matches == 0 ? 0 : wins / matches;
 
   @override
@@ -38,5 +48,8 @@ class HeroBuild extends Equatable {
     wins,
     buyTimes,
     categories,
+    players,
+    avgBadge,
+    authorAccountId,
   ];
 }

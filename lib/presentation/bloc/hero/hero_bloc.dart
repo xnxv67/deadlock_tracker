@@ -140,9 +140,7 @@ class HeroBloc extends Bloc<HeroEvent, HeroState> {
     }
   }
 
-  Future<HeroTrend?> _safeTrend(
-    Future<HeroTrend?> Function() action,
-  ) async {
+  Future<HeroTrend?> _safeTrend(Future<HeroTrend?> Function() action) async {
     try {
       return await action();
     } catch (_) {

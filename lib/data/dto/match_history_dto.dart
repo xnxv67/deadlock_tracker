@@ -17,6 +17,11 @@ class MatchHistoryDto {
     this.netWorth,
     this.lastHits,
     this.denies,
+    this.heroLevel = 0,
+    this.matchMode = 0,
+    this.gameMode = 0,
+    this.rankedBadge,
+    this.rankedDelta,
   });
 
   final int matchId;
@@ -37,6 +42,17 @@ class MatchHistoryDto {
   final int? netWorth;
   final int? lastHits;
   final int? denies;
+
+  /// Уровень героя к концу матча.
+  final int heroLevel;
+
+  /// Режим матча и режим игры из API.
+  final int matchMode;
+  final int gameMode;
+
+  /// Ранговый бейдж после матча и изменение прогресса ранга.
+  final int? rankedBadge;
+  final int? rankedDelta;
 
   factory MatchHistoryDto.fromJson(Map<String, dynamic> json) {
     final playerTeam = jsonInt(json['player_team']);
@@ -65,6 +81,11 @@ class MatchHistoryDto {
       netWorth: _optionalInt(json['net_worth']),
       lastHits: _optionalInt(json['last_hits']),
       denies: _optionalInt(json['denies']),
+      heroLevel: jsonInt(json['hero_level']),
+      matchMode: jsonInt(json['match_mode']),
+      gameMode: jsonInt(json['game_mode']),
+      rankedBadge: _optionalInt(json['ranked_display_badge']),
+      rankedDelta: _optionalInt(json['ranked_delta']),
     );
   }
 
@@ -83,6 +104,11 @@ class MatchHistoryDto {
       if (netWorth != null) 'nw': netWorth,
       if (lastHits != null) 'lh': lastHits,
       if (denies != null) 'dn': denies,
+      if (heroLevel > 0) 'hl': heroLevel,
+      if (matchMode > 0) 'mm': matchMode,
+      if (gameMode > 0) 'gm': gameMode,
+      if (rankedBadge != null) 'rb': rankedBadge,
+      if (rankedDelta != null) 'rd': rankedDelta,
     };
   }
 
@@ -102,6 +128,11 @@ class MatchHistoryDto {
       netWorth: _optionalInt(json['nw']),
       lastHits: _optionalInt(json['lh']),
       denies: _optionalInt(json['dn']),
+      heroLevel: jsonInt(json['hl']),
+      matchMode: jsonInt(json['mm']),
+      gameMode: jsonInt(json['gm']),
+      rankedBadge: _optionalInt(json['rb']),
+      rankedDelta: _optionalInt(json['rd']),
     );
   }
 }
